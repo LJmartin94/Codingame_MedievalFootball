@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <math.h>
 
 // The corner of the map representing your base
 int base_x;
@@ -164,6 +165,7 @@ int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && target.health >= 3)
     {
         printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        mana = mana - 10;
         return (1);
     }
     else if (target.type == 0 && target.near_base == 1)
