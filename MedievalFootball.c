@@ -3,6 +3,24 @@
 #include <string.h>
 #include <stdbool.h>
 
+typedef struct s_entity
+{
+    int id; // Unique identifier
+    int type; // 0=monster, 1=your hero, 2=opponent hero 
+    int shield_life; // Count down until shield spell fades
+    int is_controlled; // Equals 1 when this entity is under a control spell
+    int health; // Remaining health of this monster
+    int near_base; // 0=monster with no target yet, 1=monster targeting a base
+    int threat_for; // Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
+    
+    // Position of this entity
+    int x;
+    int y;
+    // Trajectory of this monster
+    int vx;
+    int vy;
+} t_entity;
+
 int main()
 {
     // The corner of the map representing your base
@@ -25,27 +43,22 @@ int main()
         // Amount of heros and monsters you can see
         int entity_count;
         scanf("%d", &entity_count);
-        for (int i = 0; i < entity_count; i++) {
-            // Unique identifier
-            int id;
-            // 0=monster, 1=your hero, 2=opponent hero
-            int type;
+        for (int i = 0; i < entity_count; i++) 
+        {
+            int id; // Unique identifier
+            int type; // 0=monster, 1=your hero, 2=opponent hero 
+            int shield_life; // Count down until shield spell fades
+            int is_controlled; // Equals 1 when this entity is under a control spell
+            int health; // Remaining health of this monster
+            int near_base; // 0=monster with no target yet, 1=monster targeting a base
+            int threat_for; // Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
+            
             // Position of this entity
             int x;
             int y;
-            // Ignore for this league; Count down until shield spell fades
-            int shield_life;
-            // Ignore for this league; Equals 1 when this entity is under a control spell
-            int is_controlled;
-            // Remaining health of this monster
-            int health;
             // Trajectory of this monster
             int vx;
             int vy;
-            // 0=monster with no target yet, 1=monster targeting a base
-            int near_base;
-            // Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
-            int threat_for;
             scanf("%d%d%d%d%d%d%d%d%d%d%d", &id, &type, &x, &y, &shield_life, &is_controlled, &health, &vx, &vy, &near_base, &threat_for);
         }
         for (int i = 0; i < heroes_per_player; i++) {
