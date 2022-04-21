@@ -60,6 +60,18 @@ int to_mid(char c, int coord, int dif)
         return (mid_y);
 }
 
+int from_base(char c, int coord, int dif)
+{
+    if (c == 'x' && coord < mid_x)
+        return (coord + dif);
+    if (c == 'y' && coord < mid_y)
+        return (coord + dif);
+    if (c == 'x' && coord > mid_x)
+        return (coord - dif);
+    if (c == 'y' && coord > mid_y)
+        return (coord - dif);
+}
+
 int to_base(char c, int coord, int dif)
 {
     if (c == 'x' && coord < base_x && coord + dif <= base_x)
@@ -78,6 +90,78 @@ int to_base(char c, int coord, int dif)
         return (coord - dif);
     if (c == 'y' && coord > base_y)
         return (base_y);
+}
+
+int west_defender(t_entity *peepz, int entity_count)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (target.type == 0)
+    {
+        printf("MOVE %d %d\n", target.x, target.y);
+        return (1);
+    }
+    else
+        printf("MOVE %d %d\n", from_base('x', base_x, 6400), from_base('y', base_y, 4200));
+    return (0);
+}
+
+int east_defender(t_entity *peepz, int entity_count)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (target.type == 0)
+    {
+        printf("MOVE %d %d\n", target.x, target.y);
+        return (1);
+    }
+    else
+        printf("MOVE %d %d\n", from_base('x', base_x, 4200), from_base('y', base_y, 6400));
+    return (0);
+}
+
+int base_defender(t_entity *peepz, int entity_count)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (target.type == 0 && target.near_base == 1)
+    {
+        printf("MOVE %d %d\n", target.x, target.y);
+        return (1);
+    }
+    else
+        printf("MOVE %d %d\n", from_base('x', base_x, 3000), from_base('y', base_y, 3000));
+    return (0);
 }
 
 int main()
@@ -137,29 +221,18 @@ int main()
             peepz[i].dist_to_base = dist(x, y, base_x, base_y);
         }
 
-        t_entity target = peepz[0];
-        int nearest = INT_MAX;
-        for (int i = 0; i < entity_count; i++) 
-        {
-            if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
-            {
-                target = peepz[i];
-                nearest = peepz[i].dist_to_base;
-            }
-        }
-
         for (int i = 0; i < heroes_per_player; i++) 
         {
 
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
 
-
-            // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-            if (target.type == 0 && (i != 0 || target.near_base))
-                printf("MOVE %d %d\n", target.x, target.y);
+            if (i == 2)
+                west_defender(peepz, entity_count);
+            else if (i == 1)
+                east_defender(peepz, entity_count);
             else
-                printf("MOVE %d %d\n", to_mid('x', base_x, 3000), to_mid('y', base_y, 3000));
+                base_defender(peepz, entity_count);
         }
     }
 
