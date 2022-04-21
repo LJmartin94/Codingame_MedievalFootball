@@ -4,6 +4,14 @@
 #include <stdbool.h>
 #include <limits.h>
 
+// The corner of the map representing your base
+int base_x;
+int base_y;
+
+// The centre of the map
+int mid_x = 8815;
+int mid_y = 4500;
+
 typedef struct s_entity
 {
     int id; // Unique identifier
@@ -32,11 +40,49 @@ int dist(int Ax, int Ay, int Bx, int By)
     return (dist_squared);
 }
 
+int to_mid(char c, int coord, int dif)
+{
+    if (c == 'x' && coord < mid_x && coord + dif <= mid_x)
+        return (coord + dif);
+    if (c == 'x' && coord < mid_x)
+        return (mid_x);
+    if (c == 'y' && coord < mid_y && coord + dif <= mid_y)
+        return (coord + dif);
+    if (c == 'y' && coord < mid_y)
+        return (mid_y);
+    if (c == 'x' && coord > mid_x && coord + dif >= mid_x)
+        return (coord - dif);
+    if (c == 'x' && coord > mid_x)
+        return (mid_x);
+    if (c == 'y' && coord > mid_y && coord + dif >= mid_y)
+        return (coord - dif);
+    if (c == 'y' && coord > mid_y)
+        return (mid_y);
+}
+
+int to_base(char c, int coord, int dif)
+{
+    if (c == 'x' && coord < base_x && coord + dif <= base_x)
+        return (coord + dif);
+    if (c == 'x' && coord < base_x)
+        return (base_x);
+    if (c == 'y' && coord < base_y && coord + dif <= base_y)
+        return (coord + dif);
+    if (c == 'y' && coord < base_y)
+        return (base_y);
+    if (c == 'x' && coord > base_x && coord + dif >= base_x)
+        return (coord - dif);
+    if (c == 'x' && coord > base_x)
+        return (base_x);
+    if (c == 'y' && coord > base_y && coord + dif >= base_y)
+        return (coord - dif);
+    if (c == 'y' && coord > base_y)
+        return (base_y);
+}
+
 int main()
 {
     // The corner of the map representing your base
-    int base_x;
-    int base_y;
     scanf("%d%d", &base_x, &base_y);
     // Always 3
     int heroes_per_player;
@@ -113,7 +159,7 @@ int main()
             if (target.type == 0 && (i != 0 || target.near_base))
                 printf("MOVE %d %d\n", target.x, target.y);
             else
-                printf("MOVE %d %d\n", base_x, base_y);
+                printf("MOVE %d %d\n", to_mid('x', base_x, 3000), to_mid('y', base_y, 3000));
         }
     }
 
