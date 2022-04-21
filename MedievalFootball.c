@@ -21,6 +21,14 @@ typedef struct s_entity
     int vy;
 } t_entity;
 
+int dist(int Ax, int Ay, int Bx, int By)
+{
+    int x_diff = Ax - Bx;
+    int y_diff = Ay - By;
+    int dist_squared = (x_diff * x_diff) + (y_diff * y_diff);
+    return (dist_squared);
+}
+
 int main()
 {
     // The corner of the map representing your base
