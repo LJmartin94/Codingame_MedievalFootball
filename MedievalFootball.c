@@ -43,6 +43,10 @@ int main()
         // Amount of heros and monsters you can see
         int entity_count;
         scanf("%d", &entity_count);
+
+        // Array of all entities
+        t_entity peepz[entity_count];
+
         for (int i = 0; i < entity_count; i++) 
         {
             int id; // Unique identifier
@@ -60,6 +64,18 @@ int main()
             int vx;
             int vy;
             scanf("%d%d%d%d%d%d%d%d%d%d%d", &id, &type, &x, &y, &shield_life, &is_controlled, &health, &vx, &vy, &near_base, &threat_for);
+            
+            peepz[i].id = id;
+            peepz[i].type = type;
+            peepz[i].shield_life = shield_life;
+            peepz[i].is_controlled = is_controlled;
+            peepz[i].health = health;
+            peepz[i].near_base = near_base;
+            peepz[i].threat_for = threat_for;
+            peepz[i].x = x;
+            peepz[i].y = y;
+            peepz[i].vx = vx;
+            peepz[i].vy = vy;
         }
         for (int i = 0; i < heroes_per_player; i++) {
 
