@@ -12,6 +12,9 @@ int base_y;
 int mid_x = 8815;
 int mid_y = 4500;
 
+// My mana: Spend ten mana to cast a spell
+int mana;
+
 typedef struct s_entity
 {
     int id; // Unique identifier
@@ -23,7 +26,7 @@ typedef struct s_entity
     int threat_for; // Given this monster's trajectory, is it a threat to 1=your base, 2=your opponent's base, 0=neither
 
     int dist_to_base;
-    
+        
     // Position of this entity
     int x;
     int y;
@@ -37,7 +40,8 @@ int dist(int Ax, int Ay, int Bx, int By)
     int x_diff = Ax - Bx;
     int y_diff = Ay - By;
     int dist_squared = (x_diff * x_diff) + (y_diff * y_diff);
-    return (dist_squared);
+    int dist = (int)sqrt((double)dist_squared);
+    return (dist);
 }
 
 int to_mid(char c, int coord, int dif)
@@ -92,7 +96,7 @@ int to_base(char c, int coord, int dif)
         return (base_y);
 }
 
-int west_defender(t_entity *peepz, int entity_count)
+int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -116,7 +120,7 @@ int west_defender(t_entity *peepz, int entity_count)
     return (0);
 }
 
-int east_defender(t_entity *peepz, int entity_count)
+int east_defender(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -140,7 +144,7 @@ int east_defender(t_entity *peepz, int entity_count)
     return (0);
 }
 
-int base_defender(t_entity *peepz, int entity_count)
+int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -154,13 +158,21 @@ int base_defender(t_entity *peepz, int entity_count)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (target.type == 0 && target.near_base == 1)
+    if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
+        dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
+        target.shield_life == 0 && target.health >= 3)
+    {
+        printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        return (1);
+    }
+    else if (target.type == 0 && target.near_base == 1)
     {
         printf("MOVE %d %d\n", target.x, target.y);
         return (1);
     }
     else
-        printf("MOVE %d %d\n", from_base('x', base_x, 3000), from_base('y', base_y, 3000));
+        printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
     return (0);
 }
 
@@ -178,8 +190,6 @@ int main()
         {
             // Your base health
             int health;
-            // Ignore in the first league; Spend ten mana to cast a spell
-            int mana;
             scanf("%d%d", &health, &mana);
         }
         // Amount of heros and monsters you can see
@@ -210,6 +220,7 @@ int main()
             peepz[i].id = id;
             peepz[i].type = type;
             peepz[i].shield_life = shield_life;
+            // fprintf(stderr, "shield life = %d\n", peepz[i].shield_life);
             peepz[i].is_controlled = is_controlled;
             peepz[i].health = health;
             peepz[i].near_base = near_base;
@@ -221,6 +232,24 @@ int main()
             peepz[i].dist_to_base = dist(x, y, base_x, base_y);
         }
 
+        t_entity heroZero;
+        t_entity heroOne;
+        t_entity heroTwo;
+        
+        for (int i = 0; i < entity_count; i++)
+        {
+            if (peepz[i].type == 1)
+            {
+                // fprintf(stderr, "id: %d, located at: %d,%d\n", peepz[i].id, peepz[i].x, peepz[i].y);
+                if (peepz[i].id % 3 == 0)
+                    heroZero = peepz[i];
+                if (peepz[i].id % 3 == 1)
+                    heroOne = peepz[i];
+                if (peepz[i].id % 3 == 2)
+                    heroTwo = peepz[i];
+            }
+        }
+
         for (int i = 0; i < heroes_per_player; i++) 
         {
 
@@ -228,11 +257,11 @@ int main()
             // To debug: fprintf(stderr, "Debug messages...\n");
 
             if (i == 2)
-                west_defender(peepz, entity_count);
+                west_defender(peepz, entity_count, heroTwo);
             else if (i == 1)
-                east_defender(peepz, entity_count);
+                east_defender(peepz, entity_count, heroOne);
             else
-                base_defender(peepz, entity_count);
+                base_defender(peepz, entity_count, heroZero);
         }
     }
 
