@@ -131,7 +131,8 @@ int to_base(char c, int coord, int dif)
 
 //UTILS_END/////////////////////////////////////
 
-int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
+//STRATEGIES /////////////////////////////////////
+int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -163,7 +164,7 @@ int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int east_defender(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -195,7 +196,7 @@ int east_defender(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -237,6 +238,143 @@ int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     return (0);
 }
+
+int neutral_lead_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+{
+    if (index == 2)
+        neutral_lead_two(peepz, entity_count, myHeroes[2]);
+    else if (index == 1)
+        neutral_lead_one(peepz, entity_count, myHeroes[1]);
+    else
+        neutral_lead_zero(peepz, entity_count, myHeroes[0]);
+    return (0);
+}
+
+int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int target_dist = dist(peepz[i].x + peepz[i].vx, peepz[i].y + peepz[i].vy, thisHero.x, thisHero.y);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && target_dist < nearest && target_dist < 4500)
+        {
+            // fprintf(stderr, "target_dist = %d\n", target_dist);
+            target = peepz[i];
+            nearest = target_dist;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (target.type == 0)
+    {
+        // fprintf(stderr, "Attacking target, %d,%d\n", target.x + target.vx, target.y + target.vy);
+        printf("MOVE %d %d\n", target.x + target.vx, target.y + target.vy);
+        return (1);
+    }
+    else
+    {
+        t_xypair to_travel;
+        to_travel.x = 10;
+        to_travel.y = 1;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    return (0);
+}
+
+int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int target_dist = dist(peepz[i].x + peepz[i].vx, peepz[i].y + peepz[i].vy, thisHero.x, thisHero.y);
+        fprintf(stderr, "target_dist = %d\n", target_dist);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && target_dist < nearest && target_dist < 4500)
+        {
+            target = peepz[i];
+            nearest = target_dist;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (target.type == 0)
+    {
+        fprintf(stderr, "Attacking target, %d,%d\n", target.x + target.vx, target.y + target.vy);
+        printf("MOVE %d %d\n", target.x + target.vx, target.y + target.vy);
+        return (1);
+    }
+    else
+    {
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 10;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    return (0);
+}
+
+int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
+        target.shield_life == 0 && target.health >= 3)
+    {
+        // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        printf("SPELL WIND %d %d\n", mid_x, mid_y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (target.type == 0 && target.dist_to_base <= 7100)
+    {
+        printf("MOVE %d %d\n", target.x, target.y);
+        return (1);
+    }
+    else
+    {
+        // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    return (0);
+}
+
+int neutral_farm_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+{
+    if (index == 2)
+        neutral_farm_two(peepz, entity_count, myHeroes[2]);
+    else if (index == 1)
+        neutral_farm_one(peepz, entity_count, myHeroes[1]);
+    else
+        neutral_farm_zero(peepz, entity_count, myHeroes[0]);
+    return (0);
+}
+
+//STRATEGIES_END /////////////////////////////////////
 
 int main()
 {
@@ -300,21 +438,16 @@ int main()
             peepz[i].dist_to_base = dist(x, y, base_x, base_y);
         }
 
-        t_entity heroZero;
-        t_entity heroOne;
-        t_entity heroTwo;
+        // t_entity heroZero;
+        // t_entity heroOne;
+        // t_entity heroTwo;
+        t_entity myHeroes[heroes_per_player];
         
         for (int i = 0; i < entity_count; i++)
         {
             if (peepz[i].type == 1)
             {
-                // fprintf(stderr, "id: %d, located at: %d,%d\n", peepz[i].id, peepz[i].x, peepz[i].y);
-                if (peepz[i].id % 3 == 0)
-                    heroZero = peepz[i];
-                if (peepz[i].id % 3 == 1)
-                    heroOne = peepz[i];
-                if (peepz[i].id % 3 == 2)
-                    heroTwo = peepz[i];
+                myHeroes[peepz[i].id % heroes_per_player] = peepz[i];
             }
         }
 
@@ -323,13 +456,9 @@ int main()
 
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
+            // neutral_lead_strat(i, peepz, entity_count, myHeroes);
+            neutral_farm_strat(i, peepz, entity_count, myHeroes);
 
-            if (i == 2)
-                west_defender(peepz, entity_count, heroTwo);
-            else if (i == 1)
-                east_defender(peepz, entity_count, heroOne);
-            else
-                base_defender(peepz, entity_count, heroZero);
         }
     }
 
