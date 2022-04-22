@@ -646,6 +646,171 @@ int hard_defensive_strat(int index, t_entity *peepz, int entity_count, t_entity 
     return (0);
 }
 
+int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    //MIDFIELDER
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    int num_of_creeps_around = 0;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_hero <= 1280 && \
+            peepz[i].shield_life == 0)
+        {
+            num_of_creeps_around++;
+        }
+        int dist_to_enemy_base = dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_hero <= 2200 && \
+            dist_to_enemy_base < nearest && \
+            peepz[i].health >= 10 && peepz[i].shield_life == 0);
+        {
+            target = peepz[i];
+            nearest = dist_to_enemy_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (mana > 10 && num_of_creeps_around >= 2)
+    {
+        printf("SPELL WIND %d %d FUS RO DA\n", enemy_base_x, enemy_base_y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (mana > 10 && target.type == 0)
+    {
+        // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        printf("SPELL CONTROL %d %d %d\n", target.id, enemy_base_x, enemy_base_y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200)
+    {
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(1000, to_travel.x, to_travel.y);
+        int x_togo = to_base('x', target.x, to_travel.x);
+        int y_togo = to_base('y', target.y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    else
+    {
+        printf("MOVE %d %d\n", mid_x, mid_y);
+    }
+    return (0);
+}
+
+int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    //ATTACKER
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_to_enemy = dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y);
+        if(peepz[i].type == 0 && (dist_to_enemy < nearest))
+        {
+            target = peepz[i];
+            nearest = dist_to_enemy;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (mana > 10 && target.type == 0 && target.near_base == 1 && target.threat_for == 2 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) < 2200 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) >= 1280 && \
+        target.shield_life == 0 && (target.health >= 10))
+    {
+        printf("SPELL SHIELD %d\n", target.id);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (mana > 10 && target.type == 0 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
+        target.shield_life == 0)
+    {
+        printf("SPELL WIND %d %d\n", enemy_base_x, enemy_base_y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200 && \
+        target.near_base == 1 && target.threat_for == 2)
+    {
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(1000, to_travel.x, to_travel.y);
+        int x_togo = to_base('x', target.x, to_travel.x);
+        int y_togo = to_base('y', target.y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    else
+    {
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
+        int x_togo = to_base('x', enemy_base_x, to_travel.x);
+        int y_togo = to_base('y', enemy_base_y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    return (0);
+}
+
+int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
+        target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
+    {
+        // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (target.type == 0 && target.dist_to_base <= 7100)
+    {
+        printf("MOVE %d %d ALL OUT\n", target.x, target.y);
+        return (1);
+    }
+    else
+    {
+        // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d ALL OUT\n", x_togo, y_togo);
+    }
+    return (0);
+}
+
+int mana_aggressive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+{
+    if (index == 2)
+        mana_aggressive_two(peepz, entity_count, myHeroes[2]);
+    else if (index == 1)
+        mana_aggressive_one(peepz, entity_count, myHeroes[1]);
+    else
+        mana_aggressive_zero(peepz, entity_count, myHeroes[0]);
+    return (0);
+}
 //STRATEGIES_END /////////////////////////////////////
 
 int main()
@@ -758,6 +923,10 @@ int main()
             else if (myHealth > theirHealth)
             {
                 ahead_defensive_strat(i, peepz, entity_count, myHeroes);
+            }
+            else if (myHealth <= theirHealth && myMana >= 200)
+            {
+                mana_aggressive_strat(i, peepz, entity_count, myHeroes);
             }
             else if (estimated_wild_mana > enemy_estimated_wild_mana)
             {
