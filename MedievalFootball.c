@@ -42,6 +42,29 @@ typedef struct s_xypair
     int y;
 } t_xypair;
 
+t_xypair vectorise(int dist, int x_offset, int y_offset)
+{
+    int xy_total = x_offset + y_offset;
+    double normal_x = (double)x_offset / (double)xy_total;
+    double normal_y = (double)y_offset / (double)xy_total;
+    int multiplier = 0;
+
+    int dist_squared = dist * dist;
+    for (int meta_multi = 1000; meta_multi > 0; meta_multi = meta_multi / 10)
+    {
+        while (dist_squared > ((normal_x * multiplier) * (normal_x * multiplier) + (normal_y * multiplier) * (normal_y * multiplier)))
+        {
+            // fprintf(stderr,"dist_squared = %d, normal_x = %f, normal_y = %f, multiplier = %d\n", dist_squared, normal_x, normal_y, multiplier);
+            multiplier = multiplier + meta_multi;
+        }
+        multiplier -= meta_multi;
+    }
+    t_xypair ret;
+    ret.x = (int)(normal_x * multiplier);
+    ret.y = (int)(normal_y * multiplier);
+    return (ret);
+}
+
 int dist(int Ax, int Ay, int Bx, int By)
 {
     int x_diff = Ax - Bx;
@@ -123,7 +146,15 @@ int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         return (1);
     }
     else
-        printf("MOVE %d %d\n", from_base('x', base_x, 6400), from_base('y', base_y, 4200));
+    {
+        t_xypair to_travel;
+        to_travel.x = 7;
+        to_travel.y = 4;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d VECTOR'D to_travel = %d\n", x_togo, y_togo, dist(x_togo, y_togo, base_x, base_y));
+    }
     return (0);
 }
 
@@ -147,7 +178,15 @@ int east_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         return (1);
     }
     else
-        printf("MOVE %d %d\n", from_base('x', base_x, 4200), from_base('y', base_y, 6400));
+    {
+        t_xypair to_travel;
+        to_travel.x = 4;
+        to_travel.y = 7;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d VECTOR'D to_travel = %d\n", x_togo, y_togo, dist(x_togo, y_togo, base_x, base_y));
+    }
     return (0);
 }
 
@@ -165,12 +204,13 @@ int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
     if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
-        dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && target.health >= 3)
     {
-        printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
+        printf("SPELL WIND %d %d\n", mid_x, mid_y);
         mana = mana - 10;
         return (1);
     }
