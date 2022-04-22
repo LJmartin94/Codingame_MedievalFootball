@@ -44,6 +44,7 @@ typedef struct s_xypair
     int y;
 } t_xypair;
 
+//UTILS/////////////////////////////////////
 t_xypair vectorise(int dist, int x_offset, int y_offset)
 {
     int xy_total = x_offset + y_offset;
@@ -128,6 +129,8 @@ int to_base(char c, int coord, int dif)
         return (base_y);
 }
 
+//UTILS_END/////////////////////////////////////
+
 int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
@@ -155,7 +158,7 @@ int west_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d VECTOR'D to_travel = %d\n", x_togo, y_togo, dist(x_togo, y_togo, base_x, base_y));
+        printf("MOVE %d %d\n", x_togo, y_togo);
     }
     return (0);
 }
@@ -187,7 +190,7 @@ int east_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d VECTOR'D to_travel = %d\n", x_togo, y_togo, dist(x_togo, y_togo, base_x, base_y));
+        printf("MOVE %d %d\n", x_togo, y_togo);
     }
     return (0);
 }
@@ -222,7 +225,16 @@ int base_defender(t_entity *peepz, int entity_count, t_entity thisHero)
         return (1);
     }
     else
-        printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+    {
+        // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(3000, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
     return (0);
 }
 
