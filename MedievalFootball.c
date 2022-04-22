@@ -8,6 +8,8 @@
 // The corner of the map representing your base
 int base_x;
 int base_y;
+int enemy_base_x;
+int enemy_base_y;
 
 // The centre of the map
 int mid_x = 8815;
@@ -228,6 +230,10 @@ int main()
 {
     // The corner of the map representing your base
     scanf("%d%d", &base_x, &base_y);
+    enemy_base_x = (base_x == 0) ? 17630 : 0;
+    enemy_base_y = (base_y == 0) ? 9000 : 0;
+    // fprintf(stderr, "My base: %d,%d // Their base: %d,%d\n", base_x, base_y, enemy_base_x, enemy_base_y);
+
     // Always 3
     int heroes_per_player;
     scanf("%d", &heroes_per_player);
