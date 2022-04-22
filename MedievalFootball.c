@@ -36,6 +36,12 @@ typedef struct s_entity
     int vy;
 } t_entity;
 
+typedef struct s_xypair
+{
+    int x;
+    int y;
+} t_xypair;
+
 int dist(int Ax, int Ay, int Bx, int By)
 {
     int x_diff = Ax - Bx;
@@ -187,13 +193,15 @@ int main()
     scanf("%d", &heroes_per_player);
 
     // game loop
-    while (1) {
-        for (int i = 0; i < 2; i++) 
-        {
-            // Your base health
-            int health;
-            scanf("%d%d", &health, &mana);
-        }
+    while (1) 
+    {
+        int myHealth;
+        int myMana;
+        int theirHealth;
+        int theirMana;
+        scanf("%d%d%d%d", &myHealth, &myMana, &theirHealth, &theirMana);
+        mana = myMana;
+
         // Amount of heros and monsters you can see
         int entity_count;
         scanf("%d", &entity_count);
