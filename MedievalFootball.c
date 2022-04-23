@@ -501,7 +501,7 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && target.dist_to_base < 7100 && target.near_base == 1)
+    else if (target.type == 0 && target.dist_to_base < 7100)
     {
         printf("MOVE %d %d AHEAD DEF\n", target.x, target.y);
         return (1);
