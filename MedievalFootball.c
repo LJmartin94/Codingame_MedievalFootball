@@ -661,12 +661,12 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
             num_of_creeps_around++;
         }
         int dist_to_enemy_base = dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y);
-        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_hero <= 2200 && \
-            dist_to_enemy_base < nearest && \
-            peepz[i].health >= 10 && peepz[i].shield_life == 0);
+        
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_hero <= 2200 && dist_to_enemy_base < nearest && peepz[i].health >= 10 && peepz[i].shield_life == 0)
         {
             target = peepz[i];
             nearest = dist_to_enemy_base;
+            fprintf(stderr, "Target == %d, threat_for == %d\n", peepz[i].id, peepz[i].threat_for);
         }
     }
 
@@ -677,7 +677,7 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (mana > 10 && target.type == 0)
+    else if (mana > 10 && target.type == 0 && target.threat_for != 2)
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
         printf("SPELL CONTROL %d %d %d\n", target.id, enemy_base_x, enemy_base_y);
@@ -934,7 +934,7 @@ int main()
                 all_out = 1;
                 mana_aggressive_strat(i, peepz, entity_count, myHeroes);
             }
-            else if (estimated_wild_mana > enemy_estimated_wild_mana)
+            else if (estimated_wild_mana > enemy_estimated_wild_mana) // only go neutral if enemy not visible ie not in base
             {
                 fprintf(stderr, "estimated wild mana mine: %f vs theirs: %f\n", estimated_wild_mana, enemy_estimated_wild_mana);
                 neutral_lead_strat(i, peepz, entity_count, myHeroes);
