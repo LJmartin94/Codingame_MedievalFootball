@@ -831,6 +831,9 @@ int main()
     int theirMana = 0;
     estimated_wild_mana = 0;
 
+    int turns = 0;
+    int all_out = 0;
+
     // game loop
     while (1) 
     {
@@ -839,6 +842,8 @@ int main()
         int myManaDiff = 0;
         scanf("%d%d%d%d", &myHealth, &myMana, &theirHealth, &theirMana);
         mana = myMana;
+        if (myMana <= 100 && turns < 200)
+            all_out = 0;
 
         if (theirMana >= theirOldMana)
             enemy_estimated_wild_mana += theirMana - theirOldMana;
@@ -911,7 +916,7 @@ int main()
                 myHeroes[peepz[i].id % heroes_per_player] = peepz[i];
             }
         }
-
+        turns++;
         for (int i = 0; i < heroes_per_player; i++) 
         {
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
@@ -924,8 +929,9 @@ int main()
             {
                 ahead_defensive_strat(i, peepz, entity_count, myHeroes);
             }
-            else if (myHealth <= theirHealth && myMana >= 200)
+            else if (myHealth <= theirHealth && (myMana >= 200 || all_out))
             {
+                all_out = 1;
                 mana_aggressive_strat(i, peepz, entity_count, myHeroes);
             }
             else if (estimated_wild_mana > enemy_estimated_wild_mana)
