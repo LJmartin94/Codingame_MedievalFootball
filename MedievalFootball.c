@@ -20,6 +20,16 @@ int mana;
 double estimated_wild_mana;
 double enemy_estimated_wild_mana;
 
+// Enemy visibility      
+int visible_enemies;
+int visible_enemies_my_base;
+int visible_enemies_their_base;
+
+// flags
+int enemies_spotted;
+int all_out;
+int aggressive_shielding;
+
 typedef struct s_entity
 {
     int id; // Unique identifier
@@ -277,7 +287,7 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
     else
     {
         t_xypair to_travel;
-        to_travel.x = 1;
+        to_travel.x = 3;
         to_travel.y = 10;
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
@@ -326,7 +336,7 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
     {
-        if(peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].dist_to_base < nearest)
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
         {
             target = peepz[i];
             nearest = peepz[i].dist_to_base;
@@ -344,10 +354,21 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && target.dist_to_base <= 7100)
+    else if (target.type == 0 && (target.dist_to_base <= 7100 || enemies_spotted == 0 || (visible_enemies == 0 && target.dist_to_base <= 10000)))
     {
         printf("MOVE %d %d FARMING\n", target.x, target.y);
         return (1);
+    }
+    else if (visible_enemies == 0)
+    {
+        // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+        t_xypair to_travel;
+        to_travel.x = 1;
+        to_travel.y = 1;
+        to_travel = vectorise(8000, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d FARMING\n", x_togo, y_togo);
     }
     else
     {
@@ -768,7 +789,9 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
     {
-        if(peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].dist_to_base < nearest)
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        int dist_from_post = dist(4242, 4242, peepz[i].x, peepz[i].y);
+        if(peepz[i].type == 0 && (peepz[i].threat_for == 1 || (dist_from_hero <= 2200 && dist_from_post <= 5000)) && peepz[i].dist_to_base < nearest)
         {
             target = peepz[i];
             nearest = peepz[i].dist_to_base;
@@ -786,7 +809,7 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && target.dist_to_base <= 7100)
+    else if (target.type == 0 && (target.dist_to_base <= 7100 || (target.dist_to_base <= 8000 && visible_enemies == 0)))
     {
         printf("MOVE %d %d ALL OUT\n", target.x, target.y);
         return (1);
@@ -836,7 +859,11 @@ int main()
     estimated_wild_mana = 0;
 
     int turns = 0;
-    int all_out = 0;
+
+    // flags
+    all_out = 0;
+    enemies_spotted = 0;
+    aggressive_shielding = 0;
 
     // game loop
     while (1) 
@@ -865,9 +892,10 @@ int main()
         int hostile_creeps = 0;
         int hostile_creeps_in_base = 0;
         int hostile_base_creeps_shielded = 0;
-        int visible_enemies = 0;
-        int visible_enemies_my_base = 0;
-        int visible_enemies_their_base = 0;
+
+        visible_enemies = 0;
+        visible_enemies_my_base = 0;
+        visible_enemies_their_base = 0;
 
         for (int i = 0; i < entity_count; i++) 
         {
@@ -908,9 +936,15 @@ int main()
             if (peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].near_base == 1)
                 hostile_creeps_in_base++;
             if (peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].shield_life > 0)
+            {
                 hostile_base_creeps_shielded++;
+                aggressive_shielding = 1;
+            }
             if (peepz[i].type == 2)
+            {
                 visible_enemies++;
+                enemies_spotted = 1;
+            }
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, base_x, base_y) <= 6000)
                 visible_enemies_my_base++;
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y) <= 6000)
