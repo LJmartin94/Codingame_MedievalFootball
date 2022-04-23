@@ -574,6 +574,9 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
 
 int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
 {
+    if (all_out == 1 && thisHero.dist_to_base > dist(thisHero.x, thisHero.y, enemy_base_x, enemy_base_y))
+        return (mana_aggressive_one(peepz, entity_count, thisHero));
+    
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
@@ -714,6 +717,16 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(1000, to_travel.x, to_travel.y);
         int x_togo = to_base('x', target.x, to_travel.x);
         int y_togo = to_base('y', target.y, to_travel.y);
+        printf("MOVE %d %d\n", x_togo, y_togo);
+    }
+    else if (aggressive_shielding == 1)
+    {
+        t_xypair to_travel;
+        to_travel.x = mid_x;
+        to_travel.y = mid_y;
+        to_travel = vectorise(8000, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d\n", x_togo, y_togo);
     }
     else
@@ -972,7 +985,7 @@ int main()
         {
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
-            if (myHealth == 1 || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
+            if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
             {
                 hard_defensive_strat(i, peepz, entity_count, myHeroes);
             }
