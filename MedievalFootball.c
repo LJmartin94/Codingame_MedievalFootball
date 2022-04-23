@@ -388,7 +388,7 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (mana >= 100 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana >= 100 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -407,7 +407,7 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 2;
         to_travel.y = 10;
-        to_travel = vectorise(5000, to_travel.x, to_travel.y);
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d\n", x_togo, y_togo);
@@ -429,7 +429,7 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (mana >= 100 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana >= 100 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -448,7 +448,7 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 10;
         to_travel.y = 2;
-        to_travel = vectorise(5000, to_travel.x, to_travel.y);
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d\n", x_togo, y_togo);
@@ -471,7 +471,7 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
-    if (mana >= 10 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana >= 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -491,7 +491,7 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 1;
         to_travel.y = 1;
-        to_travel = vectorise(3000, to_travel.x, to_travel.y);
+        to_travel = vectorise(4500, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d AHEAD DEF\n", x_togo, y_togo);
@@ -524,7 +524,7 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (mana > 10 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana > 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -543,7 +543,7 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 2;
         to_travel.y = 10;
-        to_travel = vectorise(4500, to_travel.x, to_travel.y);
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d\n", x_togo, y_togo);
@@ -565,7 +565,7 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (mana > 10 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana > 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -584,7 +584,7 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 10;
         to_travel.y = 2;
-        to_travel = vectorise(4500, to_travel.x, to_travel.y);
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d\n", x_togo, y_togo);
@@ -607,7 +607,7 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
-    if (mana >= 10 && target.type == 0 && target.dist_to_base < 6000 && \
+    if (mana >= 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -627,7 +627,7 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 1;
         to_travel.y = 1;
-        to_travel = vectorise(3000, to_travel.x, to_travel.y);
+        to_travel = vectorise(4500, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         printf("MOVE %d %d HARD DEF\n", x_togo, y_togo);
@@ -684,7 +684,8 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200)
+    else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200 && \
+        dist(mid_x, mid_y, target.x, target.y) <= 1000)
     {
         t_xypair to_travel;
         to_travel.x = 1;
@@ -716,8 +717,16 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         }
     }
 
+    t_xypair to_travel;
+    to_travel.x = 1;
+    to_travel.y = 1;
+    to_travel = vectorise(6000, to_travel.x, to_travel.y);
+    int pos_x = to_base('x', enemy_base_x, to_travel.x);
+    int pos_y = to_base('y', enemy_base_y, to_travel.y);
+
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
-    if (mana > 10 && target.type == 0 && target.near_base == 1 && target.threat_for == 2 && \
+    if (mana > 10 && target.type == 0 && target.threat_for == 2 && \
+        dist(target.x, target.y, enemy_base_x, enemy_base_y) < (400 * 12) && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 2200 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) >= 1280 && \
         target.shield_life == 0 && (target.health >= 10))
@@ -735,7 +744,8 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         return (1);
     }
     else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200 && \
-        target.near_base == 1 && target.threat_for == 2)
+        target.near_base == 1 && target.threat_for == 2 && \
+        dist(pos_x, pos_y, target.x, target.y) <= 1000)
     {
         t_xypair to_travel;
         to_travel.x = 1;
@@ -747,13 +757,7 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else
     {
-        t_xypair to_travel;
-        to_travel.x = 1;
-        to_travel.y = 1;
-        to_travel = vectorise(6000, to_travel.x, to_travel.y);
-        int x_togo = to_base('x', enemy_base_x, to_travel.x);
-        int y_togo = to_base('y', enemy_base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        printf("MOVE %d %d\n", pos_x, pos_y);
     }
     return (0);
 }
@@ -860,6 +864,10 @@ int main()
         t_entity peepz[entity_count];
         int hostile_creeps = 0;
         int hostile_creeps_in_base = 0;
+        int hostile_base_creeps_shielded = 0;
+        int visible_enemies = 0;
+        int visible_enemies_my_base = 0;
+        int visible_enemies_their_base = 0;
 
         for (int i = 0; i < entity_count; i++) 
         {
@@ -892,12 +900,21 @@ int main()
             peepz[i].vx = vx;
             peepz[i].vy = vy;
             peepz[i].dist_to_base = dist(x, y, base_x, base_y);
+            
             if (peepz[i].type == 1 && peepz[i].dist_to_base > 6000)
                 mana_multiplier++;
             if (peepz[i].type == 0 && peepz[i].threat_for == 1)
                 hostile_creeps++;
             if (peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].near_base == 1)
                 hostile_creeps_in_base++;
+            if (peepz[i].type == 0 && peepz[i].threat_for == 1 && peepz[i].shield_life > 0)
+                hostile_base_creeps_shielded++;
+            if (peepz[i].type == 2)
+                visible_enemies++;
+            if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, base_x, base_y) <= 6000)
+                visible_enemies_my_base++;
+            if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y) <= 6000)
+                visible_enemies_my_base++;
         }
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
@@ -921,7 +938,7 @@ int main()
         {
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
-            if (myHealth == 1 || hostile_creeps >= 8 || hostile_creeps_in_base >= 5)
+            if (myHealth == 1 || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
             {
                 hard_defensive_strat(i, peepz, entity_count, myHeroes);
             }
@@ -934,7 +951,7 @@ int main()
                 all_out = 1;
                 mana_aggressive_strat(i, peepz, entity_count, myHeroes);
             }
-            else if (estimated_wild_mana > enemy_estimated_wild_mana) // only go neutral if enemy not visible ie not in base
+            else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
             {
                 fprintf(stderr, "estimated wild mana mine: %f vs theirs: %f\n", estimated_wild_mana, enemy_estimated_wild_mana);
                 neutral_lead_strat(i, peepz, entity_count, myHeroes);
