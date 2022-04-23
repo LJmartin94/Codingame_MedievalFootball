@@ -141,6 +141,45 @@ int to_base(char c, int coord, int dif)
         return (base_y);
 }
 
+t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
+{
+    int potential_AOE = 1;
+    int aoe_x = maintarget.x;
+    int aoe_y = maintarget.y;
+
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_target = dist(peepz[i].x, peepz[i].y, maintarget.x, maintarget.y);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_target <= 1600)
+        {
+            potential_AOE++;
+            aoe_x = aoe_x + peepz[i].x;
+            aoe_y = aoe_y + peepz[i].y;
+        }
+    }
+    t_xypair ret;
+    aoe_x = aoe_x / potential_AOE;
+    aoe_y = aoe_y / potential_AOE;
+    ret.x = aoe_x;
+    ret.y = aoe_y;
+    if (dist(ret.x, ret.y, maintarget.x, maintarget.y) <= 800)
+        return(ret);
+
+    fprintf(stderr, "ERROR TARGET IMPROVEMENT MISCALCULATED\n");
+    t_xypair to_travel;
+    to_travel.x = abs(aoe_x - maintarget.x);
+    to_travel.y = abs(aoe_y - maintarget.y);
+    to_travel = vectorise(800, to_travel.x, to_travel.y);
+    ret.x = (aoe_x <= maintarget.x) ? maintarget.x - to_travel.x : maintarget.x + to_travel.x;
+    ret.y = (aoe_y <= maintarget.y) ? maintarget.y - to_travel.y : maintarget.y + to_travel.y;
+    if (dist(ret.x, ret.y, maintarget.x, maintarget.y) <= 800)
+        return(ret);
+    fprintf(stderr, "ERROR TARGET IMPROVEMENT SUPER MISCALCULATED - ABORTING\n");
+    ret.x = maintarget.x;
+    ret.y = maintarget.y;
+    return (ret);
+}
+
 //UTILS_END/////////////////////////////////////
 
 //STRATEGIES /////////////////////////////////////
@@ -160,7 +199,8 @@ int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -192,7 +232,8 @@ int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -234,7 +275,8 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0 && target.near_base == 1)
     {
-        printf("MOVE %d %d NEUTRAL\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d NEUTRAL\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -271,7 +313,6 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
         int target_dist = dist(peepz[i].x + peepz[i].vx, peepz[i].y + peepz[i].vy, thisHero.x, thisHero.y);
         if(peepz[i].type == 0 && peepz[i].threat_for != 2 && target_dist < nearest && target_dist < 4500)
         {
-            // fprintf(stderr, "target_dist = %d\n", target_dist);
             target = peepz[i];
             nearest = target_dist;
         }
@@ -280,8 +321,8 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     if (target.type == 0)
     {
-        // fprintf(stderr, "Attacking target, %d,%d\n", target.x + target.vx, target.y + target.vy);
-        printf("MOVE %d %d\n", target.x + target.vx, target.y + target.vy);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -314,7 +355,8 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x + target.vx, target.y + target.vy);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -356,7 +398,8 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0 && (target.dist_to_base <= 7100 || enemies_spotted == 0 || (visible_enemies == 0 && target.dist_to_base <= 10000)))
     {
-        printf("MOVE %d %d FARMING\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d FARMING\n", improved.x, improved.y);
         return (1);
     }
     else if (visible_enemies == 0)
@@ -420,7 +463,8 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -461,7 +505,8 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -503,7 +548,8 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0 && target.dist_to_base < 7100)
     {
-        printf("MOVE %d %d AHEAD DEF\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d AHEAD\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -515,7 +561,7 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(4500, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d AHEAD DEF\n", x_togo, y_togo);
+        printf("MOVE %d %d AHEAD\n", x_togo, y_togo);
     }
     return (0);
 }
@@ -556,7 +602,8 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -600,7 +647,8 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0)
     {
-        printf("MOVE %d %d\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -640,9 +688,10 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && target.dist_to_base < 7100 && target.near_base == 1)
+    else if (target.type == 0 && target.dist_to_base < 7100 || (target.shield_life > 0 && target.threat_for == 1))
     {
-        printf("MOVE %d %d HARD DEF\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d HARD DEF\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -690,7 +739,6 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         {
             target = peepz[i];
             nearest = dist_to_enemy_base;
-            fprintf(stderr, "Target == %d, threat_for == %d\n", peepz[i].id, peepz[i].threat_for);
         }
     }
 
@@ -824,7 +872,8 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (target.type == 0 && (target.dist_to_base <= 7100 || (target.dist_to_base <= 8000 && visible_enemies == 0)))
     {
-        printf("MOVE %d %d ALL OUT\n", target.x, target.y);
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        printf("MOVE %d %d ALL OUT\n", improved.x, improved.y);
         return (1);
     }
     else
@@ -894,7 +943,6 @@ int main()
         if (myMana >= myOldMana)
             myManaDiff = myMana - myOldMana;
         int mana_multiplier = 0;
-        fprintf(stderr, "start mana %d, diff %d\n", myMana, myManaDiff);
 
         // Amount of heros and monsters you can see
         int entity_count;
@@ -1000,7 +1048,6 @@ int main()
             }
             else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
             {
-                fprintf(stderr, "estimated wild mana mine: %f vs theirs: %f\n", estimated_wild_mana, enemy_estimated_wild_mana);
                 neutral_lead_strat(i, peepz, entity_count, myHeroes);
             }
             else
