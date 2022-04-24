@@ -757,7 +757,7 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         return (1);
     }
     else if (target.type == 0 && dist(target.x, target.y, thisHero.x, thisHero.y) > 2200 && \
-        dist(mid_x, mid_y, target.x, target.y) <= 1000)
+        dist(mid_x, mid_y, target.x, target.y) <= 1000 && aggressive_shielding == 0)
     {
         t_xypair to_travel;
         to_travel.x = 1;
@@ -807,10 +807,10 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     int pos_y = to_base('y', enemy_base_y, to_travel.y);
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    // dist(target.x, target.y, thisHero.x, thisHero.y) >= 1280 && 
     if (mana > 10 && target.type == 0 && target.threat_for == 2 && \
         dist(target.x, target.y, enemy_base_x, enemy_base_y) < (400 * 12) && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 2200 && \
-        dist(target.x, target.y, thisHero.x, thisHero.y) >= 1280 && \
         target.shield_life == 0 && (target.health >= 10))
     {
         printf("SPELL SHIELD %d\n", target.id);
