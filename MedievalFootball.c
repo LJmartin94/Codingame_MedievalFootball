@@ -31,6 +31,7 @@ int enemy_dist_to_base;
 int enemies_spotted;
 int all_out;
 int aggressive_shielding;
+int mind_controlled;
 
 typedef struct s_entity
 {
@@ -189,10 +190,12 @@ int should_I_shield(t_entity thisHero, t_entity target)
 {
     int distance_to_target = dist(thisHero.x, thisHero.y, target.x, target.y);
     
-    if ( thisHero.dist_to_base <= 10000 && \
+    //ADD DISTANCE TO ENEMY PLAYER <2200?
+    if ( mind_controlled == 1 && \
+        thisHero.dist_to_base <= 10000 && \
         visible_enemies_my_base >= 1 && \
         thisHero.shield_life <= 0 && \
-        ((myMana >= 10 && thisHero.id == 0) || (myMana >= 50 && thisHero.id != 0)) && \
+        ((mana >= 10 && thisHero.id == 0) || (mana >= 50 && thisHero.id != 0)) && \
         (target.type == 0 && target.threat_for == 1) && \
         ((enemy_dist_to_base <= thisHero.dist_to_base) || (distance_to_target <= 800)) )
         return (1);
@@ -943,6 +946,7 @@ int main()
     all_out = 0;
     enemies_spotted = 0;
     aggressive_shielding = 0;
+    mind_controlled = 0;
 
     // game loop
     while (1) 
@@ -1027,6 +1031,8 @@ int main()
                 visible_enemies_my_base++;
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y) <= 6000)
                 visible_enemies_their_base++;
+            if (peepz[i].type == 1 && peepz[i].is_controlled == 1)
+                mind_controlled = 1;
         }
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
