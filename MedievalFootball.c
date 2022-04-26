@@ -25,6 +25,8 @@ int visible_enemies;
 int visible_enemies_my_base;
 int visible_enemies_their_base;
 
+int enemy_dist_to_base;
+
 // flags
 int enemies_spotted;
 int all_out;
@@ -183,6 +185,21 @@ t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
 //UTILS_END/////////////////////////////////////
 
 //STRATEGIES /////////////////////////////////////
+int should_I_shield(t_entity thisHero, t_entity target)
+{
+    int distance_to_target = dist(thisHero.x, thisHero.y, target.x, target.y);
+    
+    if ( thisHero.dist_to_base <= 10000 && \
+        visible_enemies_my_base >= 1 && \
+        thisHero.shield_life <= 0 && \
+        ((myMana >= 10 && thisHero.id == 0) || (myMana >= 50 && thisHero.id != 0)) && \
+        (target.type == 0 && target.threat_for == 1) && \
+        ((enemy_dist_to_base <= thisHero.dist_to_base) || (distance_to_target <= 800)) )
+        return (1);
+    else
+        return (0);
+}
+
 int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
 {
     t_entity target = peepz[0];
@@ -1009,7 +1026,7 @@ int main()
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, base_x, base_y) <= 6000)
                 visible_enemies_my_base++;
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y) <= 6000)
-                visible_enemies_my_base++;
+                visible_enemies_their_base++;
         }
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
