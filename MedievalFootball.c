@@ -31,6 +31,8 @@ int visible_enemies;
 int visible_enemies_my_base;
 int visible_enemies_their_base;
 
+int enemy_defenders;
+
 int enemy_dist_to_base;
 int nearest_hero_dist;
 
@@ -209,59 +211,56 @@ t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
     return (ret);
 }
 
-t_enemyInfo enemyConstructor()
+void enemyConstructor(t_enemyInfo *to_update)
 {
-    t_enemyInfo ret;
+    to_update->heroId = -1;
+    to_update->lastX = (base_x + enemy_base_x) * -1;
+    to_update->lastY = (base_y + enemy_base_y) * -1;
+    to_update->turn_spotted = 0;  
 
-    ret.heroId = -1;
-    ret.lastX = (base_x + enemy_base_x) * -1;
-    ret.lastY = (base_y + enemy_base_y) * -1;
-    ret.turn_spotted = 0;  
+    to_update->inTheirBase = 0;
+    to_update->inMyBase = 0;
+    to_update->inTheirHalf = 0;
+    to_update->inMyHalf = 0;
 
-    ret.inTheirBase = 0;
-    ret.inMyBase = 0;
-    ret.inTheirHalf = 0;
-    ret.inMyHalf = 0;
-
-    ret.offensive = 0;
-    ret.defensive = 0;
+    to_update->offensive = 0;
+    to_update->defensive = 0;
     
     for (int h = 0; h < heroes_per_player; h++)
     {
-        ret.distToHero[h] = 0;
+        to_update->distToHero[h] = 0;
     }
-    return (ret);
+    return;
 }
 
 void enemyUpdater(int id, int x, int y, t_enemyInfo* theirHeroes, t_entity* myHeroes)
 {
-    t_enemyInfo ret;
+    int index = id % heroes_per_player;
+    t_enemyInfo *to_update = &(theirHeroes[index]);
 
-    ret.heroId = id;
+    to_update->heroId = id;
     if (x >= 0 && y >= 0) // only update the following values if enemy hero is actually spotted
     {
-        ret.lastX = x;
-        ret.lastY = y;
-        ret.turn_spotted = turns;
+        to_update->lastX = x;
+        to_update->lastY = y;
+        to_update->turn_spotted = turns;
         
         int distTheir = dist(x, y, enemy_base_x, enemy_base_y);
-        ret.inTheirBase = (distTheir <= 8000) ? 1 : 0 ;
+        to_update->inTheirBase = (distTheir <= 8000) ? 1 : 0 ;
         
         int distMy = dist(x, y, base_x, base_y);
-        ret.inMyBase = (distMy <= 8000) ? 1 : 0 ;
+        to_update->inMyBase = (distMy <= 8000) ? 1 : 0 ;
         
-        ret.inMyHalf = ((x <= mid_x && base_x == 0) || (x >= mid_x && base_x != 0)) ? 1 : 0;
-        ret.inTheirHalf = ((x >= mid_x && base_x == 0) || (x <= mid_x && base_x != 0)) ? 1 : 0;
+        to_update->inMyHalf = ((x <= mid_x && base_x == 0) || (x >= mid_x && base_x != 0)) ? 1 : 0;
+        to_update->inTheirHalf = ((x >= mid_x && base_x == 0) || (x <= mid_x && base_x != 0)) ? 1 : 0;
         
-        ret.offensive = (distMy <= distTheir) ? 1 : 0;
-        ret.defensive = (distTheir <= distMy) ? 1 : 0;
-        theirHeroes[(id % heroes_per_player)] = ret;
+        to_update->offensive = (distMy <= distTheir) ? 1 : 0;
+        to_update->defensive = (distTheir <= distMy) ? 1 : 0;
     }
     for (int h = 0; h < heroes_per_player; h++)
     {
-        ret.distToHero[h]= dist(myHeroes[h].x, myHeroes[h].y, theirHeroes[(id % heroes_per_player)].lastX, theirHeroes[(id % heroes_per_player)].lastY);
+        to_update->distToHero[h]= dist(myHeroes[h].x, myHeroes[h].y, theirHeroes[(id % heroes_per_player)].lastX, theirHeroes[(id % heroes_per_player)].lastY);
     }
-    theirHeroes[(id % heroes_per_player)] = ret;
     return;
 }
 
@@ -285,7 +284,7 @@ int should_I_shield(t_entity thisHero, t_entity target)
         return (0);
 }
 
-int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -324,7 +323,7 @@ int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -363,7 +362,7 @@ int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -413,18 +412,18 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_lead_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+int neutral_lead_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes, t_enemyInfo *theirHeroes)
 {
     if (index == 2)
-        neutral_lead_two(peepz, entity_count, myHeroes[2]);
+        neutral_lead_two(peepz, entity_count, myHeroes[2], theirHeroes);
     else if (index == 1)
-        neutral_lead_one(peepz, entity_count, myHeroes[1]);
+        neutral_lead_one(peepz, entity_count, myHeroes[1], theirHeroes);
     else
-        neutral_lead_zero(peepz, entity_count, myHeroes[0]);
+        neutral_lead_zero(peepz, entity_count, myHeroes[0], theirHeroes);
     return (0);
 }
 
-int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -464,7 +463,7 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -504,7 +503,7 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -565,18 +564,18 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int neutral_farm_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+int neutral_farm_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes, t_enemyInfo *theirHeroes)
 {
     if (index == 2)
-        neutral_farm_two(peepz, entity_count, myHeroes[2]);
+        neutral_farm_two(peepz, entity_count, myHeroes[2], theirHeroes);
     else if (index == 1)
-        neutral_farm_one(peepz, entity_count, myHeroes[1]);
+        neutral_farm_one(peepz, entity_count, myHeroes[1], theirHeroes);
     else
-        neutral_farm_zero(peepz, entity_count, myHeroes[0]);
+        neutral_farm_zero(peepz, entity_count, myHeroes[0], theirHeroes);
     return (0);
 }
 
-int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
+int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -624,7 +623,7 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
+int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -672,7 +671,7 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -722,18 +721,18 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int ahead_defensive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+int ahead_defensive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes, t_enemyInfo *theirHeroes)
 {
     if (index == 2)
-        ahead_defensive_two(peepz, entity_count, myHeroes[2]);
+        ahead_defensive_two(peepz, entity_count, myHeroes[2], theirHeroes);
     else if (index == 1)
-        ahead_defensive_one(peepz, entity_count, myHeroes[1]);
+        ahead_defensive_one(peepz, entity_count, myHeroes[1], theirHeroes);
     else
-        ahead_defensive_zero(peepz, entity_count, myHeroes[0]);
+        ahead_defensive_zero(peepz, entity_count, myHeroes[0], theirHeroes);
     return (0);
 }
 
-int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
+int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -781,7 +780,7 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
+int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     if (all_out == 1 && thisHero.dist_to_base > dist(thisHero.x, thisHero.y, enemy_base_x, enemy_base_y))
         return (mana_aggressive_one(peepz, entity_count, thisHero));
@@ -832,7 +831,7 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -882,18 +881,18 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int hard_defensive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+int hard_defensive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes, t_enemyInfo *theirHeroes)
 {
     if (index == 2)
-        hard_defensive_two(peepz, entity_count, myHeroes[2]);
+        hard_defensive_two(peepz, entity_count, myHeroes[2], theirHeroes);
     else if (index == 1)
-        hard_defensive_one(peepz, entity_count, myHeroes[1]);
+        hard_defensive_one(peepz, entity_count, myHeroes[1], theirHeroes);
     else
-        hard_defensive_zero(peepz, entity_count, myHeroes[0]);
+        hard_defensive_zero(peepz, entity_count, myHeroes[0], theirHeroes);
     return (0);
 }
 
-int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
+int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     //MIDFIELDER
     t_entity target = peepz[0];
@@ -965,7 +964,7 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
+int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     //ATTACKER
     t_entity target = peepz[0];
@@ -979,6 +978,31 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
             nearest = dist_to_enemy;
         }
     }
+
+    nearest = INT_MAX;
+    int nearestEnemyId = -1;
+    for(int h = 0; h < heroes_per_player; h++)
+    {
+        if (theirHeroes[h].distToHero[thisHero.id % heroes_per_player] <= nearest)
+        {
+            nearest = theirHeroes[h].distToHero[thisHero.id % heroes_per_player];
+            nearestEnemyId = theirHeroes[h].heroId + heroes_per_player;
+        }
+    }
+    fprintf(stderr, "LOOKING FOR %d\n", nearestEnemyId);
+    t_entity nearest_enemy = peepz[0];
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 2 && peepz[i].id == nearestEnemyId)
+        {
+            nearest_enemy = peepz[i];
+            nearestEnemyId = 42;
+            break;
+        }
+    }
+
+    if (nearestEnemyId != 42)
+        fprintf(stderr, "NEAREST ENEMY NOT FOUND\n");
 
     t_xypair to_travel;
     to_travel.x = 1;
@@ -1031,7 +1055,7 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero, t_enemyInfo *theirHeroes)
 {
     t_entity target = peepz[0];
     int nearest = INT_MAX;
@@ -1083,14 +1107,14 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     return (0);
 }
 
-int mana_aggressive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+int mana_aggressive_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes, t_enemyInfo *theirHeroes)
 {
     if (index == 2)
-        mana_aggressive_two(peepz, entity_count, myHeroes[2]);
+        mana_aggressive_two(peepz, entity_count, myHeroes[2], theirHeroes);
     else if (index == 1)
-        mana_aggressive_one(peepz, entity_count, myHeroes[1]);
+        mana_aggressive_one(peepz, entity_count, myHeroes[1], theirHeroes);
     else
-        mana_aggressive_zero(peepz, entity_count, myHeroes[0]);
+        mana_aggressive_zero(peepz, entity_count, myHeroes[0], theirHeroes);
     return (0);
 }
 //STRATEGIES_END /////////////////////////////////////
@@ -1119,6 +1143,13 @@ int main()
     aggressive_shielding = 0;
     mind_controlled = 0;
 
+    t_entity myHeroes[3];
+    t_enemyInfo theirHeroes[3];
+    for (int i = 0; i < heroes_per_player; i++)
+    {
+        enemyConstructor(&(theirHeroes[i]));
+    }
+    
     // game loop
     while (1) 
     {
@@ -1152,13 +1183,6 @@ int main()
 
         enemy_dist_to_base = INT_MAX;
         nearest_hero_dist = INT_MAX;
-
-        t_entity myHeroes[heroes_per_player];
-        t_enemyInfo theirHeroes[heroes_per_player];
-        for (int i = 0; i < heroes_per_player; i++)
-        {
-            theirHeroes[i] = enemyConstructor();
-        }
 
         for (int i = 0; i < entity_count; i++) 
         {
@@ -1236,11 +1260,13 @@ int main()
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
         
-        // (double)(myManaDiff * (double)(mana_multiplier / heroes_per_player));
+        enemy_defenders = 0;
+        for (int e = 0; e < heroes_per_player; e++)
+        {
+            if (theirHeroes[e].inTheirBase == 1)
+                enemy_defenders++;
+        }
 
-        // t_entity heroZero;
-        // t_entity heroOne;
-        // t_entity heroTwo;
         turns++;
         for (int i = 0; i < heroes_per_player; i++) 
         {
@@ -1248,23 +1274,23 @@ int main()
             // To debug: fprintf(stderr, "Debug messages...\n");
             if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
             {
-                hard_defensive_strat(i, peepz, entity_count, myHeroes);
+                hard_defensive_strat(i, peepz, entity_count, myHeroes, theirHeroes);
             }
             else if (myHealth > theirHealth)
             {
-                ahead_defensive_strat(i, peepz, entity_count, myHeroes);
+                ahead_defensive_strat(i, peepz, entity_count, myHeroes, theirHeroes);
             }
             else if (myHealth <= theirHealth && (myMana >= 200 || all_out))
             {
                 all_out = 1;
-                mana_aggressive_strat(i, peepz, entity_count, myHeroes);
+                mana_aggressive_strat(i, peepz, entity_count, myHeroes, theirHeroes);
             }
             else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
             {
-                neutral_lead_strat(i, peepz, entity_count, myHeroes);
+                neutral_lead_strat(i, peepz, entity_count, myHeroes, theirHeroes);
             }
             else
-                neutral_farm_strat(i, peepz, entity_count, myHeroes);
+                neutral_farm_strat(i, peepz, entity_count, myHeroes, theirHeroes);
         }
     }
 
