@@ -11,6 +11,12 @@ int base_y;
 int enemy_base_x;
 int enemy_base_y;
 
+// Number of turns elapsed
+int turns;
+
+// Always 3
+int heroes_per_player;
+
 // The centre of the map
 int mid_x = 8815;
 int mid_y = 4500;
@@ -60,6 +66,25 @@ typedef struct s_xypair
     int y;
 } t_xypair;
 
+typedef struct s_enemyInfo
+{
+    int heroId;
+
+    int lastX;
+    int lastY;
+    int turn_spotted;
+
+    int inTheirBase;
+    int inMyBase;
+    int inTheirHalf;
+    int inMyHalf;
+
+    int offensive;
+    int defensive;
+
+    int distToHero[3];
+} t_enemyInfo;
+
 //UTILS/////////////////////////////////////
 t_xypair vectorise(int dist, int x_offset, int y_offset)
 {
@@ -86,9 +111,9 @@ t_xypair vectorise(int dist, int x_offset, int y_offset)
 
 int dist(int Ax, int Ay, int Bx, int By)
 {
-    int x_diff = Ax - Bx;
-    int y_diff = Ay - By;
-    int dist_squared = (x_diff * x_diff) + (y_diff * y_diff);
+    long int x_diff = Ax - Bx;
+    long int y_diff = Ay - By;
+    long int dist_squared = (x_diff * x_diff) + (y_diff * y_diff);
     int dist = (int)sqrt((double)dist_squared);
     return (dist);
 }
@@ -184,15 +209,71 @@ t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
     return (ret);
 }
 
+t_enemyInfo enemyConstructor()
+{
+    t_enemyInfo ret;
+
+    ret.heroId = -1;
+    ret.lastX = (base_x + enemy_base_x) * -1;
+    ret.lastY = (base_y + enemy_base_y) * -1;
+    ret.turn_spotted = 0;  
+
+    ret.inTheirBase = 0;
+    ret.inMyBase = 0;
+    ret.inTheirHalf = 0;
+    ret.inMyHalf = 0;
+
+    ret.offensive = 0;
+    ret.defensive = 0;
+    
+    for (int h = 0; h < heroes_per_player; h++)
+    {
+        ret.distToHero[h] = 0;
+    }
+    return (ret);
+}
+
+void enemyUpdater(int id, int x, int y, t_enemyInfo* theirHeroes, t_entity* myHeroes)
+{
+    t_enemyInfo ret;
+
+    ret.heroId = id;
+    if (x >= 0 && y >= 0) // only update the following values if enemy hero is actually spotted
+    {
+        ret.lastX = x;
+        ret.lastY = y;
+        ret.turn_spotted = turns;
+        
+        int distTheir = dist(x, y, enemy_base_x, enemy_base_y);
+        ret.inTheirBase = (distTheir <= 8000) ? 1 : 0 ;
+        
+        int distMy = dist(x, y, base_x, base_y);
+        ret.inMyBase = (distMy <= 8000) ? 1 : 0 ;
+        
+        ret.inMyHalf = ((x <= mid_x && base_x == 0) || (x >= mid_x && base_x != 0)) ? 1 : 0;
+        ret.inTheirHalf = ((x >= mid_x && base_x == 0) || (x <= mid_x && base_x != 0)) ? 1 : 0;
+        
+        ret.offensive = (distMy <= distTheir) ? 1 : 0;
+        ret.defensive = (distTheir <= distMy) ? 1 : 0;
+        theirHeroes[(id % heroes_per_player)] = ret;
+    }
+    for (int h = 0; h < heroes_per_player; h++)
+    {
+        ret.distToHero[h]= dist(myHeroes[h].x, myHeroes[h].y, theirHeroes[(id % heroes_per_player)].lastX, theirHeroes[(id % heroes_per_player)].lastY);
+    }
+    theirHeroes[(id % heroes_per_player)] = ret;
+    return;
+}
+
 //UTILS_END/////////////////////////////////////
 
 //STRATEGIES /////////////////////////////////////
 int should_I_shield(t_entity thisHero, t_entity target)
 {
     int distance_to_target = dist(thisHero.x, thisHero.y, target.x, target.y);
-    
-    // thisHero.dist_to_base <= 10000 && 
+
     //ADD DISTANCE TO ENEMY PLAYER <2200?
+    // thisHero.dist_to_base <= 15000 && 
     if ( mind_controlled == 1 && \
         (visible_enemies_my_base >= 1 || (enemy_dist_to_base <= thisHero.dist_to_base)) && \
         thisHero.shield_life <= 0 && \
@@ -848,7 +929,8 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (mana > 10 && target.type == 0 && target.threat_for != 2)
+    else if (mana > 10 && target.type == 0 && target.threat_for != 2 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) < 2200)
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
         printf("SPELL CONTROL %d %d %d\n", target.id, enemy_base_x, enemy_base_y);
@@ -1021,8 +1103,6 @@ int main()
     enemy_base_y = (base_y == 0) ? 9000 : 0;
     // fprintf(stderr, "My base: %d,%d // Their base: %d,%d\n", base_x, base_y, enemy_base_x, enemy_base_y);
 
-    // Always 3
-    int heroes_per_player;
     scanf("%d", &heroes_per_player);
 
     int myHealth = 0;
@@ -1031,7 +1111,7 @@ int main()
     int theirMana = 0;
     estimated_wild_mana = 0;
 
-    int turns = 0;
+    turns = 0;
 
     // flags
     all_out = 0;
@@ -1072,6 +1152,13 @@ int main()
 
         enemy_dist_to_base = INT_MAX;
         nearest_hero_dist = INT_MAX;
+
+        t_entity myHeroes[heroes_per_player];
+        t_enemyInfo theirHeroes[heroes_per_player];
+        for (int i = 0; i < heroes_per_player; i++)
+        {
+            theirHeroes[i] = enemyConstructor();
+        }
 
         for (int i = 0; i < entity_count; i++) 
         {
@@ -1131,6 +1218,20 @@ int main()
                 enemy_dist_to_base = peepz[i].dist_to_base;
              if (peepz[i].type == 1 && peepz[i].dist_to_base <= nearest_hero_dist)
                 nearest_hero_dist = peepz[i].dist_to_base;
+            if (peepz[i].type == 2)
+                enemyUpdater(peepz[i].id, peepz[i].x, peepz[i].y, theirHeroes, myHeroes);
+        }
+        for (int i = 0; i < entity_count; i++)
+        {
+            if (peepz[i].type == 1)
+            {
+                myHeroes[peepz[i].id % heroes_per_player] = peepz[i];
+            }
+        }
+
+        for (int i = 0; i < heroes_per_player; i++) //updates the distance between where enemies were last seen and your heroes, even if no enemies spotted this turn
+        {
+            enemyUpdater(i, -1, -1, theirHeroes, myHeroes);
         }
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
@@ -1140,15 +1241,6 @@ int main()
         // t_entity heroZero;
         // t_entity heroOne;
         // t_entity heroTwo;
-        t_entity myHeroes[heroes_per_player];
-        
-        for (int i = 0; i < entity_count; i++)
-        {
-            if (peepz[i].type == 1)
-            {
-                myHeroes[peepz[i].id % heroes_per_player] = peepz[i];
-            }
-        }
         turns++;
         for (int i = 0; i < heroes_per_player; i++) 
         {
