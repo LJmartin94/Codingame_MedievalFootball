@@ -26,6 +26,7 @@ int visible_enemies_my_base;
 int visible_enemies_their_base;
 
 int enemy_dist_to_base;
+int nearest_hero_dist;
 
 // flags
 int enemies_spotted;
@@ -190,10 +191,10 @@ int should_I_shield(t_entity thisHero, t_entity target)
 {
     int distance_to_target = dist(thisHero.x, thisHero.y, target.x, target.y);
     
+    // thisHero.dist_to_base <= 10000 && 
     //ADD DISTANCE TO ENEMY PLAYER <2200?
     if ( mind_controlled == 1 && \
-        thisHero.dist_to_base <= 10000 && \
-        visible_enemies_my_base >= 1 && \
+        (visible_enemies_my_base >= 1 || (enemy_dist_to_base <= thisHero.dist_to_base)) && \
         thisHero.shield_life <= 0 && \
         ((mana >= 10 && thisHero.id == 0) || (mana >= 50 && thisHero.id != 0)) && \
         (target.type == 0 && target.threat_for == 1) && \
@@ -217,6 +218,12 @@ int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
@@ -250,6 +257,12 @@ int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
@@ -284,6 +297,12 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -339,6 +358,12 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
@@ -373,6 +398,12 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
@@ -407,6 +438,12 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -472,6 +509,12 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 100 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -514,6 +557,12 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 100 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -557,6 +606,12 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -611,6 +666,12 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana > 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -656,6 +717,12 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana > 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -699,6 +766,12 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana >= 10 && target.type == 0 && target.dist_to_base < 8000 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
@@ -763,6 +836,12 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     }
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana > 10 && num_of_creeps_around >= 2)
     {
         printf("SPELL WIND %d %d FUS RO DA\n", enemy_base_x, enemy_base_y);
@@ -828,6 +907,12 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, thisHero.x, thisHero.y) >= 1280 && 
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
     if (mana > 10 && target.type == 0 && target.threat_for == 2 && \
         dist(target.x, target.y, enemy_base_x, enemy_base_y) < (400 * 12) && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 2200 && \
@@ -881,7 +966,13 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 
     // In the first league: MOVE <x> <y> | WAIT; In later leagues: | SPELL <spellParams>;
     // dist(target.x, target.y, base_x, base_y) > dist(thisHero.x, thisHero.y, base_x, base_y) && 
-    if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (mana >= 10 && target.type == 0 && target.near_base == 1 && \
         dist(target.x, target.y, thisHero.x, thisHero.y) < 1280 && \
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
@@ -979,6 +1070,9 @@ int main()
         visible_enemies_my_base = 0;
         visible_enemies_their_base = 0;
 
+        enemy_dist_to_base = INT_MAX;
+        nearest_hero_dist = INT_MAX;
+
         for (int i = 0; i < entity_count; i++) 
         {
             int id; // Unique identifier
@@ -1027,12 +1121,16 @@ int main()
                 visible_enemies++;
                 enemies_spotted = 1;
             }
-            if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, base_x, base_y) <= 6000)
+            if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, base_x, base_y) <= 10000)
                 visible_enemies_my_base++;
             if (peepz[i].type == 2 && dist(peepz[i].x, peepz[i].y, enemy_base_x, enemy_base_y) <= 6000)
                 visible_enemies_their_base++;
             if (peepz[i].type == 1 && peepz[i].is_controlled == 1)
                 mind_controlled = 1;
+            if (peepz[i].type == 2 && peepz[i].dist_to_base <= enemy_dist_to_base)
+                enemy_dist_to_base = peepz[i].dist_to_base;
+             if (peepz[i].type == 1 && peepz[i].dist_to_base <= nearest_hero_dist)
+                nearest_hero_dist = peepz[i].dist_to_base;
         }
         // fprintf(stderr, "estimated wild mana %f, myManadiff %f, mana_multi %f\n", estimated_wild_mana, myManaDiff, (mana_multiplier / heroes_per_player));
         estimated_wild_mana = estimated_wild_mana + ((double)myManaDiff * (double)mana_multiplier / (double)heroes_per_player);
