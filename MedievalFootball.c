@@ -409,6 +409,10 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         printf("MOVE %d %d NEUTRAL\n", improved.x, improved.y);
         return (1);
     }
+    else if (nearest_hero_id != -1)
+    {
+        printf("MOVE %d %d NEUTRAL\n", theirHeroes[nearest_hero_id % heroes_per_player].lastX, theirHeroes[nearest_hero_id % heroes_per_player].lastY);
+    }
     else
     {
         // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
