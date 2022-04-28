@@ -121,6 +121,28 @@ t_xypair vectorise(int dist, int x_offset, int y_offset)
     return (ret);
 }
 
+t_xypair reverse_vector(int vx, int vy, int min_dist)
+{
+    if ((vx == 0) && (vy == 0)) // see if target is stationary
+    {
+        vx = (base_x == 0 ) ? -1 : 1; //assume stationary targets are headed towards your base
+        vy = (base_x == 0 ) ? -1 : 1;
+    }
+
+    if (((vx * vx) + (vy * vy)) < (min_dist * min_dist)) // check if pushing target along reverse vector pushes them far enough
+    {
+        t_xypair temp = vectorise((min_dist + 1), vx, vy);
+        vx = (vx < 0) ? (temp.x * -1) : temp.x;
+        vy = (vy < 0) ? (temp.y * -1) : temp.y;
+    }
+
+    t_xypair ret; //invert the vector
+    ret.x = -1 * vx;
+    ret.y = -1 * vy;
+
+    return (ret);
+}
+
 int dist(int Ax, int Ay, int Bx, int By)
 {
     long int x_diff = Ax - Bx;
@@ -444,7 +466,10 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -610,7 +635,10 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -719,7 +747,10 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -769,7 +800,10 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -820,7 +854,10 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -882,7 +919,10 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -935,7 +975,10 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -986,7 +1029,10 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }
@@ -1219,7 +1265,10 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         target.shield_life == 0 && (target.health >= 3 || target.dist_to_base < thisHero.dist_to_base))
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL WIND %d %d FUS RO DA\n", mid_x, mid_y);
+        t_xypair wind_reverse = reverse_vector(target.vx, target.vy, 3000);
+        wind_reverse.x = target.x + wind_reverse.x;
+        wind_reverse.y = target.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
         return (1);
     }

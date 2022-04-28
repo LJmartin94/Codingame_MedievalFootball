@@ -1,5 +1,4 @@
 - if enemy can score, prioritise counter wind
-- push mosnters along their reverse entry vector, not just to mid, when defending
 - prevent yourself from moving into range of an attacker if you enemy is using control and your shield is about to go down
 - patrol attackers and defenders
 - don't let multiple heroes farm the same monster when farming for mana (unless it is in base)
