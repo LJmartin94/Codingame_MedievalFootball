@@ -78,6 +78,9 @@ typedef struct s_enemyInfo
     int lastY;
     int turn_spotted;
 
+    int vx;
+    int vy;
+
     int inTheirBase;
     int inMyBase;
     int inTheirHalf;
@@ -220,7 +223,10 @@ void enemyConstructor(int index)
     theirHeroes[index].heroId = -1;
     theirHeroes[index].lastX = (base_x + enemy_base_x) * -1;
     theirHeroes[index].lastY = (base_y + enemy_base_y) * -1;
-    theirHeroes[index].turn_spotted = 0;  
+    theirHeroes[index].turn_spotted = 0; 
+
+    theirHeroes[index].vx = -1;
+    theirHeroes[index].vy = -1;
 
     theirHeroes[index].inTheirBase = 0;
     theirHeroes[index].inMyBase = 0;
@@ -237,16 +243,31 @@ void enemyConstructor(int index)
     return;
 }
 
-void enemyUpdater(int id, int x, int y, t_entity* myHeroes)
+t_xypair enemyUpdater(int id, int x, int y, t_entity* myHeroes)
 {
     int index = id % heroes_per_player;
+    t_xypair vector;
+    vector.x = -1;
+    vector.y = -1;
 
     theirHeroes[index].heroId = index;
     if (x >= 0 && y >= 0) // only update the following values if enemy hero is actually spotted
     {
+        vector.x = x - theirHeroes[index].lastX;
+        vector.y = y - theirHeroes[index].lastY;
+        int normalise_turns = turns - theirHeroes[index].turn_spotted;
+        if (normalise_turns >= 1)
+        {
+            vector.x = vector.x / normalise_turns;
+            vector.y = vector.y / normalise_turns;
+        }
+
         theirHeroes[index].lastX = x;
         theirHeroes[index].lastY = y;
         theirHeroes[index].turn_spotted = turns;
+
+        theirHeroes[index].vx = vector.x;
+        theirHeroes[index].vy = vector.y;
         
         int distTheir = dist(x, y, enemy_base_x, enemy_base_y);
         theirHeroes[index].inTheirBase = (distTheir <= 8000) ? 1 : 0 ;
@@ -272,7 +293,7 @@ void enemyUpdater(int id, int x, int y, t_entity* myHeroes)
     {
         theirHeroes[index].distToHero[h]= dist(myHeroes[h].x, myHeroes[h].y, theirHeroes[(id % heroes_per_player)].lastX, theirHeroes[(id % heroes_per_player)].lastY);
     }
-    return;
+    return (vector);
 }
 
 //UTILS_END/////////////////////////////////////
@@ -411,7 +432,20 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     }
     else if (nearest_hero_id != -1)
     {
-        printf("MOVE %d %d NEUTRAL\n", theirHeroes[nearest_hero_id % heroes_per_player].lastX, theirHeroes[nearest_hero_id % heroes_per_player].lastY);
+        int enemyX = theirHeroes[nearest_hero_id % heroes_per_player].lastX;
+        int enemyY = theirHeroes[nearest_hero_id % heroes_per_player].lastY;
+        int enemyVX = theirHeroes[nearest_hero_id % heroes_per_player].vx;
+        int enemyVY = theirHeroes[nearest_hero_id % heroes_per_player].vy;
+        int enemyDist = dist(base_x, base_y, enemyX, enemyY);
+
+        t_xypair to_travel;
+        to_travel.x = abs(base_x - (enemyX + enemyVX));
+        to_travel.y = abs(base_y - (enemyY + enemyVY));
+        to_travel = vectorise(enemyDist - 300, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        printf("MOVE %d %d NEUTRAL\n", x_togo, y_togo);
+        return(1);
     }
     else
     {
@@ -520,6 +554,8 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
 
 int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 {
+    // if (1)
+    //     return (neutral_lead_zero(peepz, entity_count, thisHero));
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
@@ -1259,7 +1295,13 @@ int main()
              if (peepz[i].type == 1 && peepz[i].dist_to_base <= nearest_hero_dist)
                 nearest_hero_dist = peepz[i].dist_to_base;
             if (peepz[i].type == 2)
-                enemyUpdater(peepz[i].id, peepz[i].x, peepz[i].y, myHeroes);
+            {
+                t_xypair movement_vector;
+                movement_vector = enemyUpdater(peepz[i].id, peepz[i].x, peepz[i].y, myHeroes);
+                peepz[i].vx = movement_vector.x;
+                peepz[i].vy = movement_vector.y;
+                fprintf(stderr, "Hero %d has vector %d,%d\n", peepz[i].id, peepz[i].vx, peepz[i].vy);
+            }
         }
         for (int i = 0; i < entity_count; i++)
         {
