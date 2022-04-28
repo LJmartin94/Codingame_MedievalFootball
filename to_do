@@ -1,0 +1,18 @@
+- if enemy can score, prioritise counter wind
+- push mosnters along their reverse entry vector, not just to mid, when defending
+- prevent yourself from moving into range of an attacker if you enemy is using control and your shield is about to go down
+- patrol attackers and defenders
+- don't let multiple heroes farm the same monster when farming for mana (unless it is in base)
+- push attackers when defending (no creeps in base, plenty mana)
+- keep out of 1100 range from base (useless -> monsters enter base at 300, and can be damaged from 800)
+- fine tune resting positions
+- adjust offensive spellcast hp based on max hp seen?
+- put shields on monsters 1600 away from other shielded monsters
+- abduct defenders when aggressive
+- go into enemy base with attacker
+- don't chase unkillable monsters
+- replace visible enemies variable with information about where enemies were last seen
+- make attacker stand further south by default
+- don't go defensive too early
+- defend against two attackers
+- use 2 attackers (double wind) if enemy is playing defensive
