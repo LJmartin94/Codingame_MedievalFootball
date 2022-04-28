@@ -86,6 +86,9 @@ typedef struct s_enemyInfo
     int inTheirHalf;
     int inMyHalf;
 
+    int distToMyBase;
+    int distToTheirBase;
+
     int offensive;
     int defensive;
 
@@ -218,6 +221,18 @@ t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
     return (ret);
 }
 
+t_xypair improve_move(int x, int y)
+{
+    t_xypair ret;
+    ret.x = x;
+    ret.y = y;
+    if (dist(x, y, base_x, base_y) >= 1100)
+        return (ret);
+    fprintf(stderr, "IMPROVE_MOVE STOPPED THIS HERO FROM RUNNING INTO BASE\n");
+    ret = vectorise(1100, ret.x, ret.y);
+    return (ret);
+}
+
 void enemyConstructor(int index)
 {
     theirHeroes[index].heroId = -1;
@@ -232,6 +247,9 @@ void enemyConstructor(int index)
     theirHeroes[index].inMyBase = 0;
     theirHeroes[index].inTheirHalf = 0;
     theirHeroes[index].inMyHalf = 0;
+
+    theirHeroes[index].distToMyBase = 0;
+    theirHeroes[index].distToTheirBase = 0;
 
     theirHeroes[index].offensive = 0;
     theirHeroes[index].defensive = 0;
@@ -270,9 +288,11 @@ t_xypair enemyUpdater(int id, int x, int y, t_entity* myHeroes)
         theirHeroes[index].vy = vector.y;
         
         int distTheir = dist(x, y, enemy_base_x, enemy_base_y);
+        theirHeroes[index].distToTheirBase = distTheir;
         theirHeroes[index].inTheirBase = (distTheir <= 8000) ? 1 : 0 ;
         
         int distMy = dist(x, y, base_x, base_y);
+        theirHeroes[index].distToMyBase = distMy;
         theirHeroes[index].inMyBase = (distMy <= 8000) ? 1 : 0 ;
         
         theirHeroes[index].inMyHalf = ((x <= mid_x && base_x == 0) || (x >= mid_x && base_x != 0)) ? 1 : 0;
@@ -339,6 +359,7 @@ int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -350,7 +371,8 @@ int neutral_lead_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -378,6 +400,7 @@ int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -389,7 +412,8 @@ int neutral_lead_one(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -427,6 +451,7 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0 && target.near_base == 1)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d NEUTRAL\n", improved.x, improved.y);
         return (1);
     }
@@ -441,10 +466,12 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = abs(base_x - (enemyX + enemyVX));
         to_travel.y = abs(base_y - (enemyY + enemyVY));
-        to_travel = vectorise(enemyDist - 300, to_travel.x, to_travel.y);
+        enemyDist = (enemyDist > 1100) ? enemyDist - 800 : 300;
+        to_travel = vectorise(enemyDist, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d NEUTRAL\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
         return(1);
     }
     else
@@ -456,7 +483,8 @@ int neutral_lead_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(3000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d NEUTRAL\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -496,6 +524,7 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -507,7 +536,8 @@ int neutral_farm_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -536,6 +566,7 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
     if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -547,15 +578,14 @@ int neutral_farm_one(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(7100, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
 
 int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
 {
-    // if (1)
-    //     return (neutral_lead_zero(peepz, entity_count, thisHero));
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
@@ -584,11 +614,47 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    else if (target.type == 0 && (target.dist_to_base <= 7100 || enemies_spotted == 0 || (visible_enemies == 0 && target.dist_to_base <= 10000)))
+    else if (target.type == 0 && target.near_base == 1 && target.threat_for == 1)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d FARMING\n", improved.x, improved.y);
         return (1);
+    }
+    else if (target.type == 0 && (target.dist_to_base <= 7100 || enemies_spotted == 0 || (visible_enemies == 0 && target.dist_to_base <= 10000)) && \
+    (nearest_hero_id == -1 || theirHeroes[nearest_hero_id % heroes_per_player].distToMyBase > 8800))
+    {
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d FARMING\n", improved.x, improved.y);
+        return (1);
+    }
+    else if (target.type == 0 && (target.dist_to_base <= 7100 || enemies_spotted == 0 || (visible_enemies == 0 && target.dist_to_base <= 10000)) && \
+    (nearest_hero_id != -1 || dist(target.x, target.y, theirHeroes[nearest_hero_id % heroes_per_player].lastX, theirHeroes[nearest_hero_id % heroes_per_player].lastY) <= 1200))
+    {
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d FARMING\n", improved.x, improved.y);
+        return (1);
+    }
+    else if (nearest_hero_id != -1 && theirHeroes[nearest_hero_id % heroes_per_player].distToMyBase <= 8800)
+    {
+        int enemyX = theirHeroes[nearest_hero_id % heroes_per_player].lastX;
+        int enemyY = theirHeroes[nearest_hero_id % heroes_per_player].lastY;
+        int enemyVX = theirHeroes[nearest_hero_id % heroes_per_player].vx;
+        int enemyVY = theirHeroes[nearest_hero_id % heroes_per_player].vy;
+        int enemyDist = dist(base_x, base_y, enemyX, enemyY);
+
+        t_xypair to_travel;
+        to_travel.x = abs(base_x - (enemyX + enemyVX));
+        to_travel.y = abs(base_y - (enemyY + enemyVY));
+        enemyDist = (enemyDist > 1100) ? enemyDist - 800 : 300;
+        to_travel = vectorise(enemyDist, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d FARMING\n", improved.x, improved.y);
+        return(1);
     }
     else if (visible_enemies == 0)
     {
@@ -599,7 +665,8 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(8000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d FARMING\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     else
     {
@@ -610,7 +677,8 @@ int neutral_farm_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d FARMING\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -658,6 +726,7 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -669,7 +738,8 @@ int ahead_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -706,6 +776,7 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -717,7 +788,8 @@ int ahead_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -755,6 +827,7 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0 && target.dist_to_base < 7100)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d AHEAD\n", improved.x, improved.y);
         return (1);
     }
@@ -767,7 +840,8 @@ int ahead_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(4500, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d AHEAD\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -815,6 +889,7 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -826,7 +901,8 @@ int hard_defensive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -866,6 +942,7 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
@@ -877,7 +954,8 @@ int hard_defensive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -915,6 +993,7 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0 && target.dist_to_base < 7100 || (target.shield_life > 0 && target.threat_for == 1))
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d HARD DEF\n", improved.x, improved.y);
         return (1);
     }
@@ -927,7 +1006,8 @@ int hard_defensive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(4500, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d HARD DEF\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d HARD DEF\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -996,7 +1076,8 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(1000, to_travel.x, to_travel.y);
         int x_togo = to_base('x', target.x, to_travel.x);
         int y_togo = to_base('y', target.y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     else if (aggressive_shielding == 1)
     {
@@ -1006,11 +1087,13 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(8000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     else
     {
-        printf("MOVE %d %d\n", mid_x, mid_y);
+        t_xypair improved = improve_move(mid_x, mid_y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -1097,11 +1180,13 @@ int mana_aggressive_one(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(1000, to_travel.x, to_travel.y);
         int x_togo = to_base('x', target.x, to_travel.x);
         int y_togo = to_base('y', target.y, to_travel.y);
-        printf("MOVE %d %d\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     else
     {
-        printf("MOVE %d %d\n", pos_x, pos_y);
+        t_xypair improved = improve_move(pos_x, pos_y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -1141,6 +1226,7 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
     else if (target.type == 0 && (target.dist_to_base <= 7100 || (target.dist_to_base <= 8000 && visible_enemies == 0)))
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d ALL OUT\n", improved.x, improved.y);
         return (1);
     }
@@ -1153,7 +1239,8 @@ int mana_aggressive_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
-        printf("MOVE %d %d ALL OUT\n", x_togo, y_togo);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d ALL OUT\n", improved.x, improved.y);
     }
     return (0);
 }

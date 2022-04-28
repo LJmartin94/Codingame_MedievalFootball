@@ -4,7 +4,6 @@
 - patrol attackers and defenders
 - don't let multiple heroes farm the same monster when farming for mana (unless it is in base)
 - push attackers when defending (no creeps in base, plenty mana)
-- keep out of 1100 range from base (useless -> monsters enter base at 300, and can be damaged from 800)
 - fine tune resting positions
 - adjust offensive spellcast hp based on max hp seen?
 - put shields on monsters 1600 away from other shielded monsters
