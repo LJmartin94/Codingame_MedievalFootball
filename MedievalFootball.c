@@ -38,6 +38,10 @@ int enemy_dist_to_base;
 int nearest_hero_dist;
 int nearest_hero_id;
 
+int hostile_creeps;
+int hostile_creeps_in_base;
+int hostile_base_creeps_shielded;
+
 // flags
 int enemies_spotted;
 int all_out;
@@ -91,6 +95,8 @@ typedef struct s_enemyInfo
 
     int offensive;
     int defensive;
+
+    int shieldHP;
 
     int distToHero[3];
 } t_enemyInfo;
@@ -267,6 +273,45 @@ t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
     return (ret);
 }
 
+t_xypair improve_target_towards_enemy(t_entity maintarget, t_entity *peepz, int entity_count, int enemyX, int enemyY)
+{
+    int potential_AOE = 2;
+    int aoe_x = maintarget.x + enemyX;
+    int aoe_y = maintarget.y + enemyY;
+
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_target = dist(peepz[i].x, peepz[i].y, maintarget.x, maintarget.y);
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && dist_from_target <= 1600)
+        {
+            potential_AOE++;
+            aoe_x = aoe_x + peepz[i].x;
+            aoe_y = aoe_y + peepz[i].y;
+        }
+    }
+    t_xypair ret;
+    aoe_x = aoe_x / potential_AOE;
+    aoe_y = aoe_y / potential_AOE;
+    ret.x = aoe_x;
+    ret.y = aoe_y;
+    if (dist(ret.x, ret.y, maintarget.x, maintarget.y) <= 800)
+        return(ret);
+
+    fprintf(stderr, "ERROR TARGET IMPROVEMENT MISCALCULATED\n");
+    t_xypair to_travel;
+    to_travel.x = abs(aoe_x - maintarget.x);
+    to_travel.y = abs(aoe_y - maintarget.y);
+    to_travel = vectorise(800, to_travel.x, to_travel.y);
+    ret.x = (aoe_x <= maintarget.x) ? maintarget.x - to_travel.x : maintarget.x + to_travel.x;
+    ret.y = (aoe_y <= maintarget.y) ? maintarget.y - to_travel.y : maintarget.y + to_travel.y;
+    if (dist(ret.x, ret.y, maintarget.x, maintarget.y) <= 800)
+        return(ret);
+    fprintf(stderr, "ERROR TARGET IMPROVEMENT SUPER MISCALCULATED - ABORTING\n");
+    ret.x = maintarget.x;
+    ret.y = maintarget.y;
+    return (ret);
+}
+
 t_xypair improve_move(int x, int y)
 {
     t_xypair ret;
@@ -299,6 +344,8 @@ void enemyConstructor(int index)
 
     theirHeroes[index].offensive = 0;
     theirHeroes[index].defensive = 0;
+
+    theirHeroes[index].shieldHP = 0;
     
     for (int h = 0; h < heroes_per_player; h++)
     {
@@ -307,7 +354,7 @@ void enemyConstructor(int index)
     return;
 }
 
-t_xypair enemyUpdater(int id, int x, int y, t_entity* myHeroes)
+t_xypair enemyUpdater(int id, int x, int y, t_entity* myHeroes, int shieldHP)
 {
     int index = id % heroes_per_player;
     t_xypair vector;
@@ -354,6 +401,7 @@ t_xypair enemyUpdater(int id, int x, int y, t_entity* myHeroes)
             if (distMy < isThisHeroCloser)
                 nearest_hero_id = (id % heroes_per_player) + hero_offset;
         }
+        theirHeroes[index].shieldHP = shieldHP;
     }
     for (int h = 0; h < heroes_per_player; h++)
     {
@@ -1328,6 +1376,212 @@ int mana_aggressive_strat(int index, t_entity *peepz, int entity_count, t_entity
         mana_aggressive_zero(peepz, entity_count, myHeroes[0]);
     return (0);
 }
+
+int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+    
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
+    if (target.type == 0)
+    {
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+        return (1);
+    }
+    else
+    {
+        t_xypair to_travel;
+        to_travel.x = 35;
+        to_travel.y = 70;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+    }
+    return (0);
+}
+
+int bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+    
+    if (should_I_shield(thisHero, target))
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
+    if (target.type == 0)
+    {
+        t_xypair improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+        return (1);
+    }
+    else
+    {
+        t_xypair to_travel;
+        to_travel.x = 70;
+        to_travel.y = 35;
+        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        int x_togo = from_base('x', base_x, to_travel.x);
+        int y_togo = from_base('y', base_y, to_travel.y);
+        t_xypair improved = improve_move(x_togo, y_togo);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+    }
+    return (0);
+}
+
+int bullwark_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    //DETERMINE ATTACKERS
+    int enemy_attackers = 0;
+    for (int i = 0; i < heroes_per_player; i++)
+    {
+        if (theirHeroes[i].offensive == 1)
+            enemy_attackers++;
+    }
+    fprintf(stderr, "enemy attackers spotted: %d\n", enemy_attackers);
+    
+    //DETERMINE POST
+    int striking_distance = 1100 + 2200 * enemy_attackers;
+    t_xypair post;
+    post.x = 1;
+    post.y = 1;
+    if (nearest_hero_id != -1)
+    {
+        int enemyX = theirHeroes[nearest_hero_id % heroes_per_player].lastX + theirHeroes[nearest_hero_id % heroes_per_player].vx;
+        int enemyY = theirHeroes[nearest_hero_id % heroes_per_player].lastY + theirHeroes[nearest_hero_id % heroes_per_player].vy;
+
+        post.x = abs(base_x - enemyX);
+        post.y = abs(base_y - enemyY);
+    }
+    post = vectorise(striking_distance, post.x, post.y);
+    post.x = from_base('x', base_x, post.x);
+    post.y = from_base('y', base_y, post.y);
+    // if (nearest_hero_id != -1) // DONT LET ENEMY BE CLOSER TO YOUR BASE THAN YOU
+    // {
+    //     if (dist(post.x, post.y, base_x, base_y) > theirHeroes[nearest_hero_id % heroes_per_player].distToMyBase)
+    //     {
+    //         post.x = theirHeroes[nearest_hero_id % heroes_per_player].lastX + theirHeroes[nearest_hero_id % heroes_per_player].vx;
+    //         post.y = theirHeroes[nearest_hero_id % heroes_per_player].lastY + theirHeroes[nearest_hero_id % heroes_per_player].vy;
+    //     }
+    // }
+
+    // DETERMINE CLOSEST TARGET TO ME
+    t_entity my_target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        // int dist_from_post = dist(post.x, post.y, peepz[i].x, peepz[i].y);
+        if(peepz[i].type == 0 && dist_from_hero < nearest)
+        {
+            my_target = peepz[i];
+            nearest = dist_from_hero;
+        }
+    }
+
+    // DETERMINE ACTION
+    if (mana >= 10 && my_target.type == 0 && \
+        dist(my_target.x, my_target.y, thisHero.x, thisHero.y) <= 1280 && \
+        my_target.shield_life == 0) // PUSH MONSTER
+    {
+        t_xypair wind_reverse = reverse_vector(my_target.x, my_target.y, 3000);
+        wind_reverse.x = thisHero.x + wind_reverse.x;
+        wind_reverse.y = thisHero.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
+        mana = mana - 10;
+        return (1);
+    }
+    if (mana >= 50 && nearest_hero_id != -1 && \
+        dist(theirHeroes[nearest_hero_id % 3].lastX, theirHeroes[nearest_hero_id % 3].lastY, thisHero.x, thisHero.y) <= 1280 && \
+        theirHeroes[nearest_hero_id % 3].shieldHP == 0) // PUSH PLAYER
+    {
+        t_xypair wind_reverse = reverse_vector(my_target.x, my_target.y, 3000);
+        wind_reverse.x = thisHero.x + wind_reverse.x;
+        wind_reverse.y = thisHero.y + wind_reverse.y;
+        printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
+        mana = mana - 10;
+        return (1);
+    }
+    if(should_I_shield(thisHero, my_target) || \
+        (thisHero.shield_life <= 0 && mana >= 200 && nearest_hero_id != -1) || \
+        (thisHero.shield_life <= 0 && mana >= 20 && my_target.type != 0 && thisHero.dist_to_base < (striking_distance - 100) && hostile_creeps_in_base == 0)) // SHIELD
+    {
+        printf("SPELL SHIELD %d\n", thisHero.id);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (my_target.type == 0 && my_target.threat_for == 1 && my_target.near_base == 1 && my_target.dist_to_base <= thisHero.dist_to_base)
+    {
+        t_xypair improved;
+        if (nearest_hero_id != -1)
+        {
+            int enemyX = theirHeroes[nearest_hero_id % heroes_per_player].lastX + theirHeroes[nearest_hero_id % heroes_per_player].vx;
+            int enemyY = theirHeroes[nearest_hero_id % heroes_per_player].lastY + theirHeroes[nearest_hero_id % heroes_per_player].vy;
+            improved = improve_target_towards_enemy(my_target, peepz, entity_count, enemyX, enemyY);
+        }
+        else
+            improved = improve_target(my_target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        t_xypair towards_enemy = improved;
+        printf("MOVE %d %d\n", improved.x, improved.y);
+    }
+    else
+    {
+        // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
+        t_xypair improved = improve_move(post.x, post.y);
+        printf("MOVE %d %d ALL OUT\n", improved.x, improved.y);
+    }
+    return (0);
+}
+
+
+int bullwark_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+{
+    // if (index == 2 && aggressive_shielding == 1)
+    //     return(hard_defensive_two(peepz, entity_count, myHeroes[2]));
+    // else if (index == 2)
+    //     return(neutral_farm_two(peepz, entity_count, myHeroes[2]));
+    // else if (index == 1 && aggressive_shielding == 1)
+    //     return(hard_defensive_one(peepz, entity_count, myHeroes[1]));
+    // else if (index == 1)
+    //     return(neutral_farm_one(peepz, entity_count, myHeroes[1]));
+    if (index == 2)
+        bullwark_two(peepz, entity_count, myHeroes[2]);
+    else if (index == 1)
+        bullwark_one(peepz, entity_count, myHeroes[1]);
+    else
+        bullwark_zero(peepz, entity_count, myHeroes[0]);
+    return (0);
+}
+
 //STRATEGIES_END /////////////////////////////////////
 
 int main()
@@ -1385,9 +1639,9 @@ int main()
 
         // Array of all entities
         t_entity peepz[entity_count];
-        int hostile_creeps = 0;
-        int hostile_creeps_in_base = 0;
-        int hostile_base_creeps_shielded = 0;
+        hostile_creeps = 0;
+        hostile_creeps_in_base = 0;
+        hostile_base_creeps_shielded = 0;
 
         visible_enemies = 0;
         visible_enemies_my_base = 0;
@@ -1457,7 +1711,7 @@ int main()
             if (peepz[i].type == 2)
             {
                 t_xypair movement_vector;
-                movement_vector = enemyUpdater(peepz[i].id, peepz[i].x, peepz[i].y, myHeroes);
+                movement_vector = enemyUpdater(peepz[i].id, peepz[i].x, peepz[i].y, myHeroes, peepz[i].shield_life);
                 peepz[i].vx = movement_vector.x;
                 peepz[i].vy = movement_vector.y;
                 fprintf(stderr, "Hero %d has vector %d,%d\n", peepz[i].id, peepz[i].vx, peepz[i].vy);
@@ -1473,7 +1727,7 @@ int main()
 
         for (int i = 0; i < heroes_per_player; i++) //updates the distance between where enemies were last seen and your heroes, even if no enemies spotted this turn
         {
-            enemyUpdater(i, -1, -1, myHeroes);
+            enemyUpdater(i, -1, -1, myHeroes, -1);
         }
         fprintf(stderr, "Hero %d at %d,%d \nHero %d at %d,%d \nHero %d at %d,%d \n", theirHeroes[0].heroId + hero_offset, theirHeroes[0].lastX, theirHeroes[0].lastY,  theirHeroes[1].heroId + hero_offset, theirHeroes[1].lastX, theirHeroes[1].lastY, theirHeroes[2].heroId + hero_offset, theirHeroes[2].lastX, theirHeroes[2].lastY);
         fprintf(stderr, "Nearest hero seen to base: %d at %d,%d (distance == %d)\n", nearest_hero_id, theirHeroes[nearest_hero_id % 3].lastX, theirHeroes[nearest_hero_id % 3].lastY, dist(base_x, base_y, theirHeroes[nearest_hero_id % 3].lastX, theirHeroes[nearest_hero_id % 3].lastY));
@@ -1491,25 +1745,26 @@ int main()
         {
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
-            if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
-            {
-                hard_defensive_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (myHealth > theirHealth)
-            {
-                ahead_defensive_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (myHealth <= theirHealth && (myMana >= 200 || all_out))
-            {
-                all_out = 1;
-                mana_aggressive_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
-            {
-                neutral_lead_strat(i, peepz, entity_count, myHeroes);
-            }
-            else
-                neutral_farm_strat(i, peepz, entity_count, myHeroes);
+            bullwark_strat(i, peepz, entity_count, myHeroes);
+            // if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
+            // {
+            //     hard_defensive_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (myHealth > theirHealth)
+            // {
+            //     ahead_defensive_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (myHealth <= theirHealth && (myMana >= 200 || all_out))
+            // {
+            //     all_out = 1;
+            //     mana_aggressive_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
+            // {
+            //     neutral_lead_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else
+            //     neutral_farm_strat(i, peepz, entity_count, myHeroes);
         }
     }
 
