@@ -14,4 +14,9 @@
 - don't go defensive too early
 - defend against two attackers
 - use 2 attackers (double wind) if enemy is playing defensive
--refactor strats
+- refactor strats
+- if youre the only defender in the base and there's a shielded creep you need to kill it.
+- bulwark zero should act like one and 2 if no attackers have been spotted
+- have attack mode trigger based on max mana
+- keep defender central
+- patrol midfielder to send creeps from multiple angles

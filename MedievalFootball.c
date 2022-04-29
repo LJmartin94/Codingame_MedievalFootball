@@ -1438,7 +1438,10 @@ int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 35;
         to_travel.y = 70;
-        to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
+		if (max_away_from_base >= 6000)
+        	to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
+		else
+        	to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         t_xypair improved = improve_move(x_togo, y_togo);
@@ -1503,7 +1506,10 @@ int bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 70;
         to_travel.y = 35;
-        to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
+		if (max_away_from_base >= 6000)
+        	to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
+		else
+        	to_travel = vectorise(6000, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         t_xypair improved = improve_move(x_togo, y_togo);
@@ -1802,26 +1808,32 @@ int main()
         {
             // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // To debug: fprintf(stderr, "Debug messages...\n");
-            bullwark_strat(i, peepz, entity_count, myHeroes);
-            // if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
-            // {
-            //     hard_defensive_strat(i, peepz, entity_count, myHeroes);
-            // }
-            // else if (myHealth > theirHealth)
-            // {
-            //     ahead_defensive_strat(i, peepz, entity_count, myHeroes);
-            // }
-            // else if (myHealth <= theirHealth && (myMana >= 200 || all_out))
-            // {
-            //     all_out = 1;
-            //     mana_aggressive_strat(i, peepz, entity_count, myHeroes);
-            // }
-            // else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
-            // {
-            //     neutral_lead_strat(i, peepz, entity_count, myHeroes);
-            // }
-            // else
-            //     neutral_farm_strat(i, peepz, entity_count, myHeroes);
+			if (hostile_base_creeps_shielded >= 1)
+            {
+                hard_defensive_strat(i, peepz, entity_count, myHeroes);
+            }
+            else if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
+            {
+                // hard_defensive_strat(i, peepz, entity_count, myHeroes);
+				bullwark_strat(i, peepz, entity_count, myHeroes);
+            }
+            else if (myHealth > (theirHealth + 1))
+            {
+                // ahead_defensive_strat(i, peepz, entity_count, myHeroes);
+				bullwark_strat(i, peepz, entity_count, myHeroes);
+            }
+            else if (myHealth <= (theirHealth + 1) && (myMana >= 200 || all_out))
+            {
+                all_out = 1;
+                mana_aggressive_strat(i, peepz, entity_count, myHeroes);
+            }
+            else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
+            {
+                // neutral_lead_strat(i, peepz, entity_count, myHeroes);
+				bullwark_strat(i, peepz, entity_count, myHeroes);
+            }
+            else
+                neutral_farm_strat(i, peepz, entity_count, myHeroes);
         }
     }
 
