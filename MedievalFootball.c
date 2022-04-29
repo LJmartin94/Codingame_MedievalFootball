@@ -151,7 +151,6 @@ t_xypair reverse_vector(int x, int y, int min_dist)
     int vx = (base_x - x);
     int vy = (base_y - y);
 
-    min_dist = 400;
     fprintf(stderr, "target vector: %d,%d\n", vx, vy);
     if ((vx == 0) && (vy == 0)) // see if target is stationary
     {
@@ -321,6 +320,8 @@ t_xypair improve_move(int x, int y)
         return (ret);
     fprintf(stderr, "IMPROVE_MOVE STOPPED THIS HERO FROM RUNNING INTO BASE\n");
     ret = vectorise(1100, ret.x, ret.y);
+    ret.x = (base_x == 0) ? ret.x : base_x - ret.x;
+    ret.y = (base_x == 0) ? ret.y : base_y - ret.y;
     return (ret);
 }
 
