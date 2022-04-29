@@ -42,6 +42,8 @@ int hostile_creeps;
 int hostile_creeps_in_base;
 int hostile_base_creeps_shielded;
 
+int max_creep_hp;
+
 // flags
 int enemies_spotted;
 int all_out;
@@ -1380,11 +1382,27 @@ int mana_aggressive_strat(int index, t_entity *peepz, int entity_count, t_entity
 
 int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
 {
+	//DETERMINE ATTACKERS
+    int enemy_attackers = 0;
+    for (int i = 0; i < heroes_per_player; i++)
+    {
+        if (theirHeroes[i].offensive == 1)
+            enemy_attackers++;
+    }
+
+	int min_away_from_base = (((max_creep_hp + 1) / 2) * 400) + 300 + (2200 * enemy_attackers);
+	int max_away_from_base = min_away_from_base * 4 / 3;
+
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
     {
-        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        int mx = peepz[i].x * 10000 / (mid_x * 2);
+		int my = peepz[i].y * 10000 / (mid_y * 2);
+		fprintf(stderr, "target %d at %d,%d has mx,my of %d,%d\n", peepz[i].id, peepz[i].x, peepz[i].y, mx, my);
+		int target_corner = (mx >= my) ? 1 : 0;
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest && \
+		(target_corner != 1 || peepz[i].dist_to_base <= 6000 || (peepz[i].shield_life > 0 && peepz[i].threat_for == 1)))
         {
             target = peepz[i];
             nearest = peepz[i].dist_to_base;
@@ -1397,7 +1415,18 @@ int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    if (target.type == 0)
+	if (target.type == 0 && target.dist_to_base <= min_away_from_base && mana >= 10 && \
+	dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
+	target.shield_life == 0)
+    {
+        t_xypair wind_reverse = reverse_vector(target.x, target.y, 3000);
+        wind_reverse.x = thisHero.x + wind_reverse.x;
+        wind_reverse.y = thisHero.y + wind_reverse.y;
+        printf("SPELL WIND %d %d target dist: %d, min dist: %d\n", wind_reverse.x, wind_reverse.y, target.dist_to_base, min_away_from_base);
+        mana = mana - 10;
+        return (1);
+    }
+    if (target.type == 0 && target.dist_to_base <= max_away_from_base)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
         improved = improve_move(improved.x, improved.y);
@@ -1409,7 +1438,7 @@ int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 35;
         to_travel.y = 70;
-        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         t_xypair improved = improve_move(x_togo, y_togo);
@@ -1420,11 +1449,25 @@ int bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero)
 
 int bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
 {
+	//DETERMINE ATTACKERS
+    int enemy_attackers = 0;
+    for (int i = 0; i < heroes_per_player; i++)
+    {
+        if (theirHeroes[i].offensive == 1)
+            enemy_attackers++;
+    }
+
+	int min_away_from_base = (((max_creep_hp + 1) / 2) * 400) + 300 + (2200 * enemy_attackers);
+	int max_away_from_base = min_away_from_base * 4 / 3;
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
     {
-        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+		int mx = peepz[i].x * 10000 / (mid_x * 2);
+		int my = peepz[i].y * 10000 / (mid_y * 2);
+		int target_corner = (mx >= my) ? 1 : 0;
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest && \
+		(target_corner == 1 || peepz[i].dist_to_base <= 6000 || (peepz[i].shield_life > 0 && peepz[i].threat_for == 1)))
         {
             target = peepz[i];
             nearest = peepz[i].dist_to_base;
@@ -1437,7 +1480,18 @@ int bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
         mana = mana - 10;
         return (1);
     }
-    if (target.type == 0)
+	if (target.type == 0 && target.dist_to_base <= min_away_from_base && mana >= 10 && \
+	dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
+	target.shield_life == 0)
+    {
+        t_xypair wind_reverse = reverse_vector(target.x, target.y, 3000);
+        wind_reverse.x = thisHero.x + wind_reverse.x;
+        wind_reverse.y = thisHero.y + wind_reverse.y;
+        printf("SPELL WIND %d %d target dist: %d, min dist: %d\n", wind_reverse.x, wind_reverse.y, target.dist_to_base, min_away_from_base);
+        mana = mana - 10;
+        return (1);
+    }
+    if (target.type == 0 && target.dist_to_base <= max_away_from_base)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
         improved = improve_move(improved.x, improved.y);
@@ -1449,7 +1503,7 @@ int bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
         t_xypair to_travel;
         to_travel.x = 70;
         to_travel.y = 35;
-        to_travel = vectorise(7100, to_travel.x, to_travel.y);
+        to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
         int x_togo = from_base('x', base_x, to_travel.x);
         int y_togo = from_base('y', base_y, to_travel.y);
         t_xypair improved = improve_move(x_togo, y_togo);
@@ -1467,7 +1521,6 @@ int bullwark_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         if (theirHeroes[i].offensive == 1)
             enemy_attackers++;
     }
-    fprintf(stderr, "enemy attackers spotted: %d\n", enemy_attackers);
     
     //DETERMINE POST
     int striking_distance = 1100 + 2200 * enemy_attackers;
@@ -1604,6 +1657,7 @@ int main()
     nearest_hero_id = -1;
 
     turns = 0;
+	max_creep_hp = 10;
 
     // flags
     all_out = 0;
@@ -1717,6 +1771,8 @@ int main()
                 peepz[i].vy = movement_vector.y;
                 fprintf(stderr, "Hero %d has vector %d,%d\n", peepz[i].id, peepz[i].vx, peepz[i].vy);
             }
+			if (peepz[i].type == 0 && peepz[i].health > max_creep_hp)
+				max_creep_hp = peepz[i].health;
         }
         for (int i = 0; i < entity_count; i++)
         {
