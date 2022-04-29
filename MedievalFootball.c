@@ -44,6 +44,8 @@ int hostile_base_creeps_shielded;
 
 int max_creep_hp;
 
+int alternate_targets;
+
 // flags
 int enemies_spotted;
 int all_out;
@@ -233,6 +235,19 @@ int to_base(char c, int coord, int dif)
         return (coord - dif);
     if (c == 'y' && coord > base_y)
         return (base_y);
+}
+
+t_xypair to_enemy_base_corner()
+{
+	t_xypair ret;
+	ret.x = 2500 * alternate_targets;
+	ret.y = 2500 - 2500 * alternate_targets;
+	ret.x = (enemy_base_x == 0) ? ret.x : ret.x * -1;
+	ret.y = (enemy_base_x == 0) ? ret.y : ret.y * -1;
+	ret.x = ret.x + enemy_base_x;
+	ret.y = ret.y + enemy_base_y;
+	alternate_targets = (alternate_targets == 0) ? 1 : 0;
+	return (ret);
 }
 
 t_xypair improve_target(t_entity maintarget, t_entity *peepz, int entity_count)
@@ -1184,7 +1199,9 @@ int mana_aggressive_two(t_entity *peepz, int entity_count, t_entity thisHero)
         dist(target.x, target.y, thisHero.x, thisHero.y) < 2200)
     {
         // printf("SPELL WIND %d %d\n", from_base('x', thisHero.x, 1500), from_base('y', thisHero.y, 1500));
-        printf("SPELL CONTROL %d %d %d\n", target.id, enemy_base_x, enemy_base_y);
+		t_xypair target_dest;
+		target_dest = to_enemy_base_corner();
+        printf("SPELL CONTROL %d %d %d\n", target.id, target_dest.x, target_dest.y);
         mana = mana - 10;
         return (1);
     }
@@ -1664,6 +1681,7 @@ int main()
 
     turns = 0;
 	max_creep_hp = 10;
+	alternate_targets = 0;
 
     // flags
     all_out = 0;
