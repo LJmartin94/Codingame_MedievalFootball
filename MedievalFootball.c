@@ -1611,7 +1611,7 @@ int bullwark_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         (thisHero.shield_life <= 0 && mana >= 200 && nearest_hero_id != -1) || \
         (thisHero.shield_life <= 0 && mana >= 20 && my_target.type != 0 && thisHero.dist_to_base < (striking_distance - 100) && hostile_creeps_in_base == 0)) // SHIELD
     {
-        printf("SPELL SHIELD %d\n", thisHero.id);
+        printf("SPELL SHIELD %d BULWARK\n", thisHero.id);
         mana = mana - 10;
         return (1);
     }
@@ -1628,13 +1628,13 @@ int bullwark_zero(t_entity *peepz, int entity_count, t_entity thisHero)
             improved = improve_target(my_target, peepz, entity_count);
         improved = improve_move(improved.x, improved.y);
         t_xypair towards_enemy = improved;
-        printf("MOVE %d %d\n", improved.x, improved.y);
+        printf("MOVE %d %d BULWARK\n", improved.x, improved.y);
     }
     else
     {
         // printf("MOVE %d %d\n", from_base('x', base_x, 300), from_base('y', base_y, 300));
         t_xypair improved = improve_move(post.x, post.y);
-        printf("MOVE %d %d ALL OUT\n", improved.x, improved.y);
+        printf("MOVE %d %d BULWARK\n", improved.x, improved.y);
     }
     return (0);
 }
@@ -1845,7 +1845,7 @@ int main()
                 all_out = 1;
                 mana_aggressive_strat(i, peepz, entity_count, myHeroes);
             }
-            else if (estimated_wild_mana > enemy_estimated_wild_mana && visible_enemies_my_base >= 1)
+            else if (nearest_hero_id != -1)
             {
                 // neutral_lead_strat(i, peepz, entity_count, myHeroes);
 				bullwark_strat(i, peepz, entity_count, myHeroes);
