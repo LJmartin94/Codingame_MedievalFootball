@@ -2032,13 +2032,125 @@ int aggressive_bullwark_strat(int index, t_entity *peepz, int entity_count, t_en
 
 int counter_bot_two(t_entity *peepz, int entity_count, t_entity thisHero)
 {
-    printf("MOVE %d %d COPY THAT\n", mid_x, mid_y);
+    // if (mana <= 100 && mana >= 20)
+    //     return(bullwark_zero(peepz, entity_count, thisHero));
+    t_xypair post;
+    post.x = mid_x;
+    post.y = mid_y;
+    if (nearest_hero_id != -1)
+    {
+        post.x = theirHeroes[nearest_hero_id % heroes_per_player].lastX;
+        post.y = theirHeroes[nearest_hero_id % heroes_per_player].lastY;
+    }
+
+    int attack_range = 2200;
+
+    // DETERMINE CLOSEST TARGET TO ME
+    t_entity my_target = peepz[0];
+    int nearest = INT_MAX;
+    int threat_level = 1;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        if (peepz[i].type == 0 && peepz[i].threat_for < threat_level && dist_from_hero < attack_range && \
+            (peepz[i].threat_for <= threat_level && dist_from_hero <= nearest))
+        {
+            my_target = peepz[i];
+            nearest = dist_from_hero;
+            threat_level = peepz[i].threat_for; // Neutral creeps (0) > creeps we can farm in base (1) > creeps that could kill enemies (2)
+        }
+    }
+    
+    //DETERMINE WHETHER TO HARASS ATTACKER
+    if (nearest_hero_id != -1 && theirHeroes[nearest_hero_id % heroes_per_player].shieldHP == 0 && (mana >= 20 || bully == 1) && hostile_creeps_in_base) 
+    {
+        bully = 10;
+        int my_enemy_visible = 0;
+        t_enemyInfo hero_to_target = theirHeroes[nearest_hero_id % heroes_per_player];
+        t_entity    enemy_hero;
+        for (int i = 0; i < entity_count; i++) 
+        {
+            if(peepz[i].type == 2 && peepz[i].id == nearest_hero_id)
+            {
+                enemy_hero = peepz[i];
+                my_enemy_visible = 1;
+                break;
+            }
+        }
+        if (my_enemy_visible && dist(enemy_hero.x, enemy_hero.y, thisHero.x, thisHero.y) <= 480 && mana >= 20 && \
+            hero_to_target.shieldHP == 0) //WIND ENEMY
+        {
+            printf("SPELL WIND %d %d\n", enemy_base_x, enemy_base_y);
+            mana = mana - 10;
+            return (1);
+        }
+        if (my_enemy_visible && dist(hero_to_target.lastX, hero_to_target.lastY, thisHero.x, thisHero.y) <= 2200 && mana >= 20 && hero_to_target.shieldHP == 0) //CONTROL ENEMY
+        {
+            printf("SPELL CONTROL %d %d %d\n", nearest_hero_id, enemy_base_x, enemy_base_y);
+            mana = mana - 10;
+            return (1);
+        }
+        else // WALK TO ENEMY
+        {
+            enemy_hero.x = hero_to_target.lastX;
+            enemy_hero.y = hero_to_target.lastY;
+            t_xypair improved = improve_target(enemy_hero, peepz, entity_count);
+            improved = improve_move(improved.x, improved.y);
+            printf("MOVE %d %d\n", improved.x, improved.y);
+            return(1);
+        }
+        return (1);
+    }
+
+    if (my_target.type == 0 && dist(my_target.x, my_target.y, post.x, post.y) <= attack_range)
+    {
+        t_xypair improved = improve_target(my_target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+        return (1);
+    }
+    else
+    {
+        printf("MOVE %d %d COPY THAT\n", post.x, post.y);
+    }
     return (1);
 }
 
 int counter_bot_one(t_entity *peepz, int entity_count, t_entity thisHero)
 {
-    printf("MOVE %d %d COPY THAT\n", mid_x, mid_y);
+    t_xypair post;
+    post.x = mid_x;
+    post.y = abs(base_y - 2200);
+
+    int attack_range = 2200;
+
+    // DETERMINE CLOSEST TARGET TO ME (that isn't in base)
+    t_entity my_target = peepz[0];
+    int nearest = INT_MAX;
+    int threat_level = 1;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        if (peepz[i].type == 0 && peepz[i].threat_for < threat_level && dist_from_hero < attack_range && \
+            (peepz[i].threat_for <= threat_level && dist_from_hero <= nearest) && \
+            peepz[i].dist_to_base > 5000)
+        {
+            my_target = peepz[i];
+            nearest = dist_from_hero;
+            threat_level = peepz[i].threat_for; // Neutral creeps (0) > creeps we can farm in base (1) > creeps that could kill enemies (2)
+        }
+    }
+    if (my_target.type == 0)
+    {
+        t_xypair improved = improve_target(my_target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+        return (1);
+    }
+    else
+    {
+        printf("MOVE %d %d COPY THAT\n", post.x, post.y);
+    }
     return (1);
 }
 
@@ -2074,6 +2186,11 @@ int counter_bot_zero(t_entity *peepz, int entity_count, t_entity thisHero)
         wind_reverse.y = thisHero.y + wind_reverse.y;
         printf("SPELL WIND %d %d\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
+        return (1);
+    }
+    if (target.type == 0 && target.dist_to_base <= 5000 && hostile_creeps_in_base <= 1) //can leave post if only one creep in base
+    {
+        printf("MOVE %d %d COPY THAT\n", target.x, target.y);
         return (1);
     }
     else if (thisHero.x != post.x || thisHero.y != post.y) //farm the creeps
