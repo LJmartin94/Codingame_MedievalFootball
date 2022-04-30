@@ -49,6 +49,7 @@ int alternate_targets;
 // flags
 int enemies_spotted;
 int all_out;
+int bully;
 int aggressive_shielding;
 int mind_controlled;
 
@@ -106,6 +107,7 @@ typedef struct s_enemyInfo
 } t_enemyInfo;
 
 t_enemyInfo theirHeroes[3];
+t_entity myHeroes[3];
 
 //UTILS/////////////////////////////////////
 t_xypair vectorise(int dist, int x_offset, int y_offset)
@@ -1697,6 +1699,33 @@ int aggressive_bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero
         mana = mana - 10;
         return (1);
     }
+    if (((target.type == 0 && target.dist_to_base >= 5000) || target.type != 0) && \
+        nearest_hero_id != -1 && theirHeroes[nearest_hero_id % heroes_per_player].shieldHP == 0 && (mana >= 200 || bully == 1) && 0) //DETERMINE WHETHER TO HARASS ATTACKER
+    {
+        bully = 1;
+        t_enemyInfo hero_to_target = theirHeroes[nearest_hero_id % heroes_per_player];
+        t_entity    enemy_hero;
+        for (int i = 0; i < entity_count; i++) 
+        {
+            if(peepz[i].type == 2 && peepz[i].id == nearest_hero_id)
+            {
+                enemy_hero = peepz[i];
+                break;
+            }
+        }
+        if (dist(hero_to_target.lastX, hero_to_target.lastY, thisHero.x, thisHero.y) <= 2200 && mana >= 10 && hero_to_target.shieldHP == 0) //CONTROL ENEMY
+        {
+            printf("SPELL CONTROL %d %d %d\n", nearest_hero_id, enemy_base_x, enemy_base_y);
+            mana = mana - 10;
+        }
+        else // WALK TO ENEMY
+        {
+            t_xypair improved = improve_target(enemy_hero, peepz, entity_count);
+            improved = improve_move(improved.x, improved.y);
+            printf("MOVE %d %d\n", improved.x, improved.y);
+        }
+        return (1);
+    }
 	if (target.type == 0 && mana >= 10 && \
     ((target.dist_to_base <= min_away_from_base && target.dist_to_base + 2200 >= min_away_from_base) || target.dist_to_base <= 5000) && \
 	dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
@@ -1709,25 +1738,33 @@ int aggressive_bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero
         mana = mana - 10;
         return (1);
     }
-    if (target.type == 0 && target.dist_to_base <= max_away_from_base)
+    if (target.type == 0 && (target.dist_to_base <= max_away_from_base || target.dist_to_base <= 6000))
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
         improved = improve_move(improved.x, improved.y);
         printf("MOVE %d %d\n", improved.x, improved.y);
         return (1);
     }
+    t_xypair to_travel;
+    to_travel.x = 1;
+    to_travel.y = 1;
+    if (max_away_from_base >= 6000)
+        to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
+    else
+        to_travel = vectorise(6000, to_travel.x, to_travel.y);
+    int x_togo = from_base('x', base_x, to_travel.x);
+    int y_togo = from_base('y', base_y, to_travel.y);
+    t_xypair improved = improve_move(x_togo, y_togo);
+    t_xypair post = improved;
+    if (target.type == 0 && dist(target.x, target.y, post.x, post.y) <= 2200)
+    {
+        improved = improve_target(target, peepz, entity_count);
+        improved = improve_move(improved.x, improved.y);
+        printf("MOVE %d %d\n", improved.x, improved.y);
+        return (1);
+    }
     else
     {
-        t_xypair to_travel;
-        to_travel.x = mid_x;
-        to_travel.y = mid_y;
-		if (max_away_from_base >= 6000)
-        	to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
-		else
-        	to_travel = vectorise(6000, to_travel.x, to_travel.y);
-        int x_togo = from_base('x', base_x, to_travel.x);
-        int y_togo = from_base('y', base_y, to_travel.y);
-        t_xypair improved = improve_move(x_togo, y_togo);
         printf("MOVE %d %d\n", improved.x, improved.y);
     }
     return (0);
@@ -1735,9 +1772,12 @@ int aggressive_bullwark_two(t_entity *peepz, int entity_count, t_entity thisHero
 
 int aggressive_bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero)
 {
+    //ATTACKER
+
     if (mana >= 100)
         return(mana_aggressive_one(peepz, entity_count, thisHero));
-	//DETERMINE ATTACKERS
+	
+    //DETERMINE ATTACKERS
     int enemy_attackers = 0;
     for (int i = 0; i < heroes_per_player; i++)
     {
@@ -1747,6 +1787,8 @@ int aggressive_bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero
 
 	int min_away_from_base = (((max_creep_hp + 1) / 2) * 400) + 300 + (2200 * enemy_attackers);
 	int max_away_from_base = min_away_from_base * 4 / 3;
+    
+    // DETERMINE TARGET NEAREST TO BASE
     t_entity target = peepz[0];
     int nearest = INT_MAX;
     for (int i = 0; i < entity_count; i++) 
@@ -1758,13 +1800,50 @@ int aggressive_bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero
         }
     }
     
+    int target_found = 0;
+
+    // DETERMINE CLOSEST TARGET TO ME, that isn't closer to my other defender
+    t_entity my_target = peepz[0];
+    nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+        int dist_from_other = dist(myHeroes[2].x, myHeroes[2].y, peepz[i].x, peepz[i].y);
+        // int dist_from_post = dist(post.x, post.y, peepz[i].x, peepz[i].y);
+        if(peepz[i].type == 0 && dist_from_hero < nearest && dist_from_hero <= dist_from_other)
+        {
+            my_target = peepz[i];
+            nearest = dist_from_hero;
+            target_found = 1;
+        }
+    }
+
+    // DETERMINE CLOSEST TARGET TO ME, if no target found
+    if (target_found == 0)
+    {
+        my_target = peepz[0];
+        nearest = INT_MAX;
+        for (int i = 0; i < entity_count; i++) 
+        {
+            int dist_from_hero = dist(thisHero.x, thisHero.y, peepz[i].x, peepz[i].y);
+            // int dist_from_other = dist(myHeroes[2].x, myHeroes[2].y, peepz[i].x, peepz[i].y);
+            // int dist_from_post = dist(post.x, post.y, peepz[i].x, peepz[i].y);
+            if(peepz[i].type == 0 && dist_from_hero < nearest && dist_from_hero <= 2200)
+            {
+                my_target = peepz[i];
+                nearest = dist_from_hero;
+                target_found = 1;
+            }
+        }
+    }
+    
     if (should_I_shield(thisHero, target))
     {
         printf("SPELL SHIELD %d\n", thisHero.id);
         mana = mana - 10;
         return (1);
     }
-	if (target.type == 0 && mana >= 10 && \
+	if (target.type == 0 && mana >= 150 && \
     ((target.dist_to_base <= min_away_from_base && target.dist_to_base + 2200 >= min_away_from_base) || target.dist_to_base <= 5000) && \
 	dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
 	target.shield_life == 0)
@@ -1776,7 +1855,14 @@ int aggressive_bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero
         mana = mana - 10;
         return (1);
     }
-    if (target.type == 0 && target.dist_to_base <= max_away_from_base)
+    // if (target.type == 0 && target.dist_to_base <= 5000)
+    // {
+    //     t_xypair improved = improve_target(target, peepz, entity_count);
+    //     improved = improve_move(improved.x, improved.y);
+    //     printf("MOVE %d %d\n", improved.x, improved.y);
+    //     return (1);
+    // }
+    if (my_target.type == 0 && my_target.threat_for != 2)
     {
         t_xypair improved = improve_target(target, peepz, entity_count);
         improved = improve_move(improved.x, improved.y);
@@ -1788,6 +1874,7 @@ int aggressive_bullwark_one(t_entity *peepz, int entity_count, t_entity thisHero
         t_xypair to_travel;
         to_travel.x = mid_x;
         to_travel.y = mid_y;
+        max_away_from_base = dist(mid_x, mid_y, base_x, base_y);
 		if (max_away_from_base >= 6000)
         	to_travel = vectorise(max_away_from_base, to_travel.x, to_travel.y);
 		else
@@ -1859,6 +1946,33 @@ int aggressive_bullwark_zero(t_entity *peepz, int entity_count, t_entity thisHer
         wind_reverse.y = thisHero.y + wind_reverse.y;
         printf("SPELL WIND %d %d FUS RO DA\n", wind_reverse.x, wind_reverse.y);
         mana = mana - 10;
+        return (1);
+    }
+    if (((my_target.type == 0 && my_target.dist_to_base >= 5000) || my_target.type != 0) && hostile_creeps >= 1 && \
+        nearest_hero_id != -1 && theirHeroes[nearest_hero_id % heroes_per_player].shieldHP == 0 && (mana >= 50 || bully == 1)) //DETERMINE WHETHER TO HARASS ATTACKER
+    {
+        bully = 1;
+        t_enemyInfo hero_to_target = theirHeroes[nearest_hero_id % heroes_per_player];
+        t_entity    enemy_hero;
+        for (int i = 0; i < entity_count; i++) 
+        {
+            if(peepz[i].type == 2 && peepz[i].id == nearest_hero_id)
+            {
+                enemy_hero = peepz[i];
+                break;
+            }
+        }
+        if (dist(hero_to_target.lastX, hero_to_target.lastY, thisHero.x, thisHero.y) <= 2200 && mana >= 10 && hero_to_target.shieldHP == 0) //CONTROL ENEMY
+        {
+            printf("SPELL CONTROL %d %d %d\n", nearest_hero_id, enemy_base_x, enemy_base_y);
+            mana = mana - 10;
+        }
+        else // WALK TO ENEMY
+        {
+            t_xypair improved = improve_target(enemy_hero, peepz, entity_count);
+            improved = improve_move(improved.x, improved.y);
+            printf("MOVE %d %d\n", improved.x, improved.y);
+        }
         return (1);
     }
     if (mana >= 50 && nearest_hero_id != -1 && \
@@ -1943,11 +2057,11 @@ int main()
 
     // flags
     all_out = 0;
+    bully = 0;
     enemies_spotted = 0;
     aggressive_shielding = 0;
     mind_controlled = 0;
 
-    t_entity myHeroes[3];
     for (int i = 0; i < heroes_per_player; i++)
     {
         enemyConstructor(i);
@@ -1962,7 +2076,10 @@ int main()
         scanf("%d%d%d%d", &myHealth, &myMana, &theirHealth, &theirMana);
         mana = myMana;
         if (myMana <= 100 && turns < 200)
+        {
             all_out = 0;
+            bully = 0;
+        }
 
         if (theirMana >= theirOldMana)
             enemy_estimated_wild_mana += theirMana - theirOldMana;
@@ -2082,34 +2199,36 @@ int main()
         turns++;
         for (int i = 0; i < heroes_per_player; i++)
         {
-            // Write an action using printf(). DON'T FORGET THE TRAILING \n
-            // To debug: fprintf(stderr, "Debug messages...\n");
-            if (hostile_base_creeps_shielded >= 1)
-            {
-                hard_defensive_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
-            {
-                // hard_defensive_strat(i, peepz, entity_count, myHeroes);
-				bullwark_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (myHealth > (theirHealth + 1))
-            {
-                // ahead_defensive_strat(i, peepz, entity_count, myHeroes);
-				bullwark_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (myHealth <= (theirHealth + 1) && (myMana >= 200 || all_out))
-            {
-                all_out = 1;
-                mana_aggressive_strat(i, peepz, entity_count, myHeroes);
-            }
-            else if (nearest_hero_id != -1)
-            {
-                // neutral_lead_strat(i, peepz, entity_count, myHeroes);
-				bullwark_strat(i, peepz, entity_count, myHeroes);
-            }
-            else
-                neutral_farm_strat(i, peepz, entity_count, myHeroes);
+            // // Write an action using printf(). DON'T FORGET THE TRAILING \n
+            // // To debug: fprintf(stderr, "Debug messages...\n");
+            // if (hostile_base_creeps_shielded >= 1)
+            // {
+            //     hard_defensive_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if ((myHealth == 1 && theirHealth == 1) || hostile_creeps >= 8 || hostile_creeps_in_base >= 5 || hostile_base_creeps_shielded >= 1)
+            // {
+            //     // hard_defensive_strat(i, peepz, entity_count, myHeroes);
+			// 	bullwark_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (myHealth > (theirHealth + 1))
+            // {
+            //     // ahead_defensive_strat(i, peepz, entity_count, myHeroes);
+			// 	bullwark_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (myHealth <= (theirHealth + 1) && (myMana >= 200 || all_out))
+            // {
+            //     all_out = 1;
+            //     // mana_aggressive_strat(i, peepz, entity_count, myHeroes);
+                aggressive_bullwark_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else if (nearest_hero_id != -1)
+            // {
+            //     // neutral_lead_strat(i, peepz, entity_count, myHeroes);
+			// 	// bullwark_strat(i, peepz, entity_count, myHeroes);
+            //     aggressive_bullwark_strat(i, peepz, entity_count, myHeroes);
+            // }
+            // else
+            //     neutral_farm_strat(i, peepz, entity_count, myHeroes);
         }
     }
 
