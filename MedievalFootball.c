@@ -2030,6 +2030,75 @@ int aggressive_bullwark_strat(int index, t_entity *peepz, int entity_count, t_en
     return (0);
 }
 
+int counter_bot_two(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    printf("MOVE %d %d COPY THAT\n", mid_x, mid_y);
+    return (1);
+}
+
+int counter_bot_one(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    printf("MOVE %d %d COPY THAT\n", mid_x, mid_y);
+    return (1);
+}
+
+int counter_bot_zero(t_entity *peepz, int entity_count, t_entity thisHero)
+{
+    //FARMS MANA AND CAN DEFEND THE BASE SOLO INDEFINITELY IF LEFT UNTAMPERED
+    t_xypair post;
+    post.x = abs(base_x - 800);
+    post.y = abs(base_y - 800);
+
+    t_entity target = peepz[0];
+    int nearest = INT_MAX;
+    for (int i = 0; i < entity_count; i++) 
+    {
+        if(peepz[i].type == 0 && peepz[i].threat_for != 2 && peepz[i].dist_to_base < nearest)
+        {
+            target = peepz[i];
+            nearest = peepz[i].dist_to_base;
+        }
+    }
+
+    if (target.type == 0 && target.dist_to_base <= 5000 && mana <= 10) // not enough mana for a wind spell -> DANGER!
+    {
+        printf("MOVE %d %d COPY THAT\n", target.x, target.y);
+        return (1);
+    }
+    if (target.type == 0 && target.dist_to_base <= 700 && mana >= 10 && \
+        dist(target.x, target.y, thisHero.x, thisHero.y) <= 1280 && \
+        target.shield_life == 0) // push the creeps back
+    {
+        t_xypair wind_reverse = reverse_vector(target.x, target.y, 3000);
+        wind_reverse.x = thisHero.x + wind_reverse.x;
+        wind_reverse.y = thisHero.y + wind_reverse.y;
+        printf("SPELL WIND %d %d\n", wind_reverse.x, wind_reverse.y);
+        mana = mana - 10;
+        return (1);
+    }
+    else if (thisHero.x != post.x || thisHero.y != post.y) //farm the creeps
+    {
+        printf("MOVE %d %d COPY THAT\n", post.x, post.y);
+        return (1);
+    }
+    else
+    {
+        printf("MOVE %d %d COPY THAT\n", post.x, post.y);
+        return (1);
+    }
+    return (1);
+}
+
+int counter_bot_strat(int index, t_entity *peepz, int entity_count, t_entity *myHeroes)
+{
+    if (index == 2)
+        counter_bot_two(peepz, entity_count, myHeroes[2]);
+    else if (index == 1)
+        counter_bot_one(peepz, entity_count, myHeroes[1]);
+    else
+        counter_bot_zero(peepz, entity_count, myHeroes[0]);
+    return (0);
+}
 
 //STRATEGIES_END /////////////////////////////////////
 
@@ -2199,6 +2268,7 @@ int main()
         turns++;
         for (int i = 0; i < heroes_per_player; i++)
         {
+            counter_bot_strat(i, peepz, entity_count, myHeroes);
             // // Write an action using printf(). DON'T FORGET THE TRAILING \n
             // // To debug: fprintf(stderr, "Debug messages...\n");
             // if (hostile_base_creeps_shielded >= 1)
@@ -2219,7 +2289,7 @@ int main()
             // {
             //     all_out = 1;
             //     // mana_aggressive_strat(i, peepz, entity_count, myHeroes);
-                aggressive_bullwark_strat(i, peepz, entity_count, myHeroes);
+            //     aggressive_bullwark_strat(i, peepz, entity_count, myHeroes);
             // }
             // else if (nearest_hero_id != -1)
             // {
